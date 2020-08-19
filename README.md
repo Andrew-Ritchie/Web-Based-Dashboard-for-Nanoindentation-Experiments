@@ -1,2 +1,2 @@
 # Web-Based-Dashboard-for-Nanoindentation-Experiments
-Repo for my final year masters project.
+Development of an online user-oriented dashboard. Allowing users to store, share and analyse results from nanoindentation experiments using atomic force microscopes. 
