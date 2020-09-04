@@ -1,6 +1,8 @@
 import re
+import plotly.express as px
 
-class CollateInformation:
+
+class DataSet:
     def __init__(self, filepath):
         self.filepath = filepath
         self.tipradius = None
@@ -11,16 +13,15 @@ class CollateInformation:
         self.xpos = None
         self.ypos = None
         self.xposition = None
+        self.results = None
     
-class NewOptics(CollateInformation):
+class NewOptics(DataSet):
     def __init__(self, filepath):
         super().__init__(filepath)
     
     def loadheader(self):
         #Load header information
-        data_file = open(self.filepath, "r")
-        head = [next(data_file) for x in range(33)]
-        data_file.close()
+        head = self.openfile(0,33)
         #Assign variables
         self.tipradius = self.extractvalue(head[11])
         self.calibrationfactor = self.extractvalue(head[12])
@@ -29,10 +30,39 @@ class NewOptics(CollateInformation):
         self.xpos = self.extractvalue(head[3])
         self.ypos = self.extractvalue(head[4])
     
+    def loaddata(self): 
+        
+        self.results ={"Time":[], "Load":[], "Indentation":[], "Cantilever":[], "Piezo":[], "Auxiliary":[]}
+        rawdata = self.openfile(35, None)
+
+        for line in rawdata:
+            info = re.split("[\n\t]", line)
+            self.results["Time"].append(float(info[0]))
+            self.results["Load"].append(float(info[1]))
+            self.results["Indentation"].append(float(info[2]))
+            self.results["Cantilever"].append(float(info[3]))
+            self.results["Piezo"].append(float(info[4]))
+            self.results["Auxiliary"].append(float(info[5]))
+    
+
     def extractvalue(self, sentence):
         return float(re.split("[\n\t]", sentence)[-2])
+    
+    def openfile(self, num1, num2):
+        data_file = open(self.filepath, "r")
+        rawdata = data_file.readlines()[num1:num2]
+        data_file.close()
+        return rawdata
+
         
         
+
+
+test = NewOptics("../data/matrix_scan01/2NapFF 16mgmL GdL S-1 X-1 Y-2 I-1.txt")
+test.loaddata()
+
+fig = px.line(test.results['Indentation'], title='Life expectancy in Canada')
+fig.show()
 
 
 
