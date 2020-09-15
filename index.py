@@ -11,7 +11,7 @@ app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 nav = dbc.Nav(
     [
-        dbc.NavItem(dbc.NavLink("Home",  href="/apps/home")),
+        dbc.NavItem(dbc.NavLink("Home", href="/apps/home")),
         dbc.NavItem(dbc.NavLink("Analysis", href="/apps/analysis")),
         dbc.NavItem(dbc.NavLink("Feed", href="/apps/feed")),
         dbc.NavItem(dbc.NavLink("About", href="/apps/about"))
@@ -54,7 +54,7 @@ def display_page(pathname):
     elif pathname == '/apps/about':
         return about.layout
     else:
-        return '404'
+        return home.layout
 
 if __name__ == '__main__':
     app.run_server(debug=True)
