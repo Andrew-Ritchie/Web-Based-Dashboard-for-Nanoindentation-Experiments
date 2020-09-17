@@ -6,5 +6,6 @@ from dash.dependencies import Input, Output
 
 
 layout = html.Div([
-    html.H1('Home')
+    html.H1('Home'),
+    html.Div(children=[html.H2('Welcome!'),html.Br(),html.P('This platform serves as an inital concept, demonstrating basic preperation of data functionality. ')], style={'textIndent':'15%'})
 ])
