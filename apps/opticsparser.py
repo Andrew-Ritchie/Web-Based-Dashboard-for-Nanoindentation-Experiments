@@ -3,28 +3,39 @@ import re
 
 
 class ConvertFormat:
-    def __init__(self, filename):
+    def __init__(self, filename, experiment_name):
         self.filename = filename
-        self.name = None
-        self.data = {self.name : {'header':{}, 'results':{} } }
+        self.experiment_name = experiment_name
+        self.data = {self.filename : {'header':{}, 'results':{} } }
 
+    def write_json(self, data, filename):
+        with open(filename,'w') as f: 
+            json.dump(data, f, indent=4) 
 
+    def createfile(self):
+        with open('converted/' + self.experiment_name + '.txt') as json_file:
+            print("hello")
+            data = json.load(json_file)
+            data[self.experiment_name].update(self.data)
+            print(data.keys())
+            print(data[self.experiment_name].keys())
+            
+        self.write_json(data, 'converted/' + self.experiment_name + '.txt')
     
+
+
 class ConvertOptics(ConvertFormat):
-    def __init__(self, filename):
-        super().__init__(filename)
-        self.name = None
+    def __init__(self, filename, experiment_name):
+        super().__init__(filename, experiment_name)
     
     def loadheader(self, decodedfile):
         #Load header information
         #we dont use open file here :)
         head = self.openfile(0,33,decodedfile)
-        print(head[11])
-        print(head[11][-2])
 
         #Assign variables
-        self.data[self.name]['header'] = {
-            'tipradius': self.extractvalue(head[11][-2]),
+        self.data[self.filename]['header'] = {
+            'tipradius': self.extractvalue(head[11]),
             'calibrationfactor': self.extractvalue(head[12]),
             'cantileverk': self.extractvalue(head[9]),
             'youngsprovided': self.extractvalue(head[-2]),
@@ -32,22 +43,24 @@ class ConvertOptics(ConvertFormat):
             'ypos': self.extractvalue(head[4])
         }
 
-    def loaddata(self):
-        self.data[self.name]['results'] ={"Time":[], "Load":[], "Indentation":[], "Cantilever":[], "Piezo":[], "Auxiliary":[]}
-        rawdata = ""
+    def loaddata(self, decodedfile):
+        self.data[self.filename]['results'] ={"Time":[], "Load":[], "Indentation":[], "Cantilever":[], "Piezo":[], "Auxiliary":[]}
+        rawdata = self.openfile(35,-1,decodedfile)
 
         for line in rawdata:
-            info = re.split("[\n\t]", line)
-            self.data[self.name]['results']["Time"].append(float(info[0]))
-            self.data[self.name]['results']["Load"].append(float(info[1]))
-            self.data[self.name]['results']["Indentation"].append(float(info[2]))
-            self.data[self.name]['results']["Cantilever"].append(float(info[3]))
-            self.data[self.name]['results']["Piezo"].append(float(info[4]))
-            self.data[self.name]['results']["Auxiliary"].append(float(info[5]))
+            info = re.split(r"[~\\r\\n\\t]+", line)
+            
+            self.data[self.filename]['results']["Time"].append(float(info[0]))
+            self.data[self.filename]['results']["Load"].append(float(info[1]))
+            self.data[self.filename]['results']["Indentation"].append(float(info[2]))
+            self.data[self.filename]['results']["Cantilever"].append(float(info[3]))
+            self.data[self.filename]['results']["Piezo"].append(float(info[4]))
+            self.data[self.filename]['results']["Auxiliary"].append(float(info[5]))
+            
 
     
     def extractvalue(self, sentence):
-        return [(re.split(r"[~\\r\\n\\t]+", sentence))]
+        return re.split(r"[~\\r\\n\\t]+", sentence)[-2]
 
         
 

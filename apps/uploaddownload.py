@@ -45,13 +45,12 @@ app.layout = html.Div([
 
 def parse_contents(contents, filename, date):
     content_type, content_string = contents.split(',')
-    print(content_type)
-    print('oi oi')
     decoded = base64.b64decode(content_string)
-    
-    
+    experiment_name = "Experiment_1" #This will be user defined
+    test = ConvertOptics(filename, experiment_name)
     test.loadheader(decoded)
-    print(test.data)
+    test.loaddata(decoded)
+    test.createfile()
     
     #print(re.split(r"[~\\r\\n\\t]+", x[-2]))
     
@@ -69,10 +68,10 @@ def parse_contents(contents, filename, date):
                State('upload-data', 'last_modified')])
 def update_output(list_of_contents, list_of_names, list_of_dates):
     if list_of_contents is not None:
-        test = ConvertOptics(list_of_names)
         children = [
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)]
+        
         return children
 
 
