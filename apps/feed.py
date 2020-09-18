@@ -25,20 +25,20 @@ layout = html.Div([
             html.A('Select Files')
         ]),
         style={
-            'width': '100%',
+            'width': '50%',
             'height': '60px',
             'lineHeight': '60px',
             'borderWidth': '1px',
             'borderStyle': 'dashed',
             'borderRadius': '5px',
             'textAlign': 'center',
-            'margin': '10px'
+            'margin': '10px',
         },
         # Allow multiple files to be uploaded
         multiple=True
     ),
     html.Div(id='output-data-upload'),
-])
+], style= {'padding-left': '30%', 'padding-right': '10%'})
 
 def parse_contents(contents, filename, date):
     content_type, content_string = contents.split(',')

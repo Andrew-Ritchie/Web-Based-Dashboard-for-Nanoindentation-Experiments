@@ -9,7 +9,6 @@ from apps import home, analysis, feed, about
 from apps.feed import parse_contents
 
 app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
-app.config.suppress_callback_exceptions = True
 
 
 nav = dbc.Nav(
@@ -40,13 +39,9 @@ app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
     html.Div(children=[html.H1('Nanoindentation Application', style={'color': 'blue', 'fontSize': 50, 'font-family': 'verdana', 'textAlign': 'center', 'backgroundColor': '#EAF0F1'}), nav], style={'backgroundColor': '#EAF0F1', 'height': '87%'}),
     html.Div(children=[sidebar],style={'float':'left'}),    
-    html.Div(id='page-content',style={"background-color": "#f8f9fa", 'textIndent':'50%'}),
-    dcc.Link('Navigate to nested web page', href='/apps/feed')
+    html.Div(id='page-content',style={"background-color": "#f8f9fa", 'textIndent':'50%'})
 ])
-app.validation_layout = html.Div([
-    app.layout,
-    feed.layout
-])
+
 
 @app.callback(Output('output-data-upload', 'children'),
               [Input('upload-data', 'contents')],
@@ -54,11 +49,9 @@ app.validation_layout = html.Div([
                State('upload-data', 'last_modified'))
 def update_output(list_of_contents, list_of_names, list_of_dates):
     if list_of_contents is not None:
-        print("oioo")
         children = [
             parse_contents(c, n, d) for c, n, d in
-            zip(list_of_contents, list_of_names, list_of_dates)]
-        
+            zip(list_of_contents, list_of_names, list_of_dates)] 
         return children
 
 @app.callback(Output('page-content', 'children'),

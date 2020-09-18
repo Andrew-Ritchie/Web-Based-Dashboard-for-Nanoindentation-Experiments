@@ -41,7 +41,6 @@ class ConvertOptics(ConvertFormat):
         }
 
     def loaddata(self, decodedfile):
-        print("We got to LoadData!")
         self.data[self.filename]['results'] ={"Time":[], "Load":[], "Indentation":[], "Cantilever":[], "Piezo":[], "Auxiliary":[]}
         rawdata = self.openfile(35,-1,decodedfile)
 
