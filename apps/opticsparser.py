@@ -13,14 +13,13 @@ class ConvertFormat:
             json.dump(data, f, indent=4) 
 
     def createfile(self):
-        with open('converted/' + self.experiment_name + '.txt') as json_file:
-            print("hello")
+        with open('apps/converted/' + self.experiment_name + '.txt') as json_file:
             data = json.load(json_file)
             data[self.experiment_name].update(self.data)
             print(data.keys())
             print(data[self.experiment_name].keys())
             
-        self.write_json(data, 'converted/' + self.experiment_name + '.txt')
+        self.write_json(data, 'apps/converted/' + self.experiment_name + '.txt')
     
 
 
@@ -29,8 +28,6 @@ class ConvertOptics(ConvertFormat):
         super().__init__(filename, experiment_name)
     
     def loadheader(self, decodedfile):
-        #Load header information
-        #we dont use open file here :)
         head = self.openfile(0,33,decodedfile)
 
         #Assign variables
@@ -44,6 +41,7 @@ class ConvertOptics(ConvertFormat):
         }
 
     def loaddata(self, decodedfile):
+        print("We got to LoadData!")
         self.data[self.filename]['results'] ={"Time":[], "Load":[], "Indentation":[], "Cantilever":[], "Piezo":[], "Auxiliary":[]}
         rawdata = self.openfile(35,-1,decodedfile)
 

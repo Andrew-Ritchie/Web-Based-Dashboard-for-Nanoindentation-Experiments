@@ -61,18 +61,11 @@ class NewOptics(DataSet):
         
 
 
-test = NewOptics("../data/matrix_scan01/2NapFF 16mgmL GdL S-1 X-9 Y-9 I-1.txt")
+test = NewOptics('../data/matrix_scan01/2NapFF 16mgmL GdL S-1 X-1 Y-1 I-1.txt')
 test.loaddata()
 
 fig = px.line(x=test.results['Time'], y=test.results['Indentation'], title='Life expectancy in Canada')
 fig.show()
-#for i in range(1900,2000):
-#    x = test.results['Load'][i-1]
-#    print(test.results['Load'][i] , i)
-x = []
-for i in range(len(test.results['Load'])):
-    x.append(abs(test.results['Load'][i] - test.results['Load'][i-1]))
-print(x[max(test.results['Load'])])
-print(max(x))
+
 
 

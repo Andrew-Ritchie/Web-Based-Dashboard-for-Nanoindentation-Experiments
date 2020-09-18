@@ -2,12 +2,15 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 
 from app import app
-from apps import home, analysis, feed, about 
+from apps import home, analysis, feed, about
+from apps.feed import parse_contents
 
 app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
+app.config.suppress_callback_exceptions = True
+
 
 nav = dbc.Nav(
     [
@@ -38,9 +41,25 @@ app.layout = html.Div([
     html.Div(children=[html.H1('Nanoindentation Application', style={'color': 'blue', 'fontSize': 50, 'font-family': 'verdana', 'textAlign': 'center', 'backgroundColor': '#EAF0F1'}), nav], style={'backgroundColor': '#EAF0F1', 'height': '87%'}),
     html.Div(children=[sidebar],style={'float':'left'}),    
     html.Div(id='page-content',style={"background-color": "#f8f9fa", 'textIndent':'50%'}),
-    html.H5('test test test')
+    dcc.Link('Navigate to nested web page', href='/apps/feed')
+])
+app.validation_layout = html.Div([
+    app.layout,
+    feed.layout
 ])
 
+@app.callback(Output('output-data-upload', 'children'),
+              [Input('upload-data', 'contents')],
+              State('upload-data', 'filename'),
+               State('upload-data', 'last_modified'))
+def update_output(list_of_contents, list_of_names, list_of_dates):
+    if list_of_contents is not None:
+        print("oioo")
+        children = [
+            parse_contents(c, n, d) for c, n, d in
+            zip(list_of_contents, list_of_names, list_of_dates)]
+        
+        return children
 
 @app.callback(Output('page-content', 'children'),
                 [Input('url', 'pathname')])
@@ -55,6 +74,8 @@ def display_page(pathname):
         return about.layout
     else:
         return home.layout
+
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
