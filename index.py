@@ -9,7 +9,7 @@ from apps import home, analysis, feed, about
 from apps.feed import parse_contents
 
 app = dash.Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
-
+app.config.suppress_callback_exceptions = True
 
 nav = dbc.Nav(
     [
