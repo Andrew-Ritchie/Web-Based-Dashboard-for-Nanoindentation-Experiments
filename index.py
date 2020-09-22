@@ -54,6 +54,14 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
             zip(list_of_contents, list_of_names, list_of_dates)] 
         return children
 
+@app.callback(
+    Output("output", "children"),
+    [Input("input2", "value")],
+)
+def update_output2(input2):
+    #create the experiment object
+    return u'Input 2 {}'.format(input2)
+
 @app.callback(Output('page-content', 'children'),
                 [Input('url', 'pathname')])
 def display_page(pathname):

@@ -1,7 +1,7 @@
 import base64
 import datetime
 import io
-import re
+import re 
 import codecs
 
 
@@ -37,6 +37,8 @@ layout = html.Div([
         # Allow multiple files to be uploaded
         multiple=True
     ),
+    dcc.Input(id="input2", type="text", placeholder="", debounce=True),
+    html.Div(id="output"),
     html.Div(id='output-data-upload'),
 ], style= {'padding-left': '30%', 'padding-right': '10%'})
 
@@ -45,8 +47,8 @@ def parse_contents(contents, filename, date):
     decoded = base64.b64decode(content_string)
     experiment_name = "Experiment_1" #This will be user defined
     test = ConvertOptics(filename, experiment_name)
-    test.loadheader(decoded)
     test.loaddata(decoded)
+    test.loadheader(decoded)
     test.createfile()
     return html.Div([
         html.H5(filename),
