@@ -4,7 +4,7 @@ import os.path
 
 
 class ConvertFormat:
-    def __init__(self, filename, experiment_name):
+    def __init__(self, experiment_name=None, filename=None):
         self.filename = filename
         self.experiment_name = experiment_name
         self.data = {self.filename : {'header':{}, 'results':{} } }
@@ -25,11 +25,14 @@ class ConvertFormat:
                 data[self.experiment_name].update(self.data)
             self.write_json(data, 'apps/converted/' + self.experiment_name + '.txt')
     
+    def assignexperiment(self, experimentname):
+        self.experiment_name = experimentname
+    
 
 
 class ConvertOptics(ConvertFormat):
-    def __init__(self, filename, experiment_name):
-        super().__init__(filename, experiment_name)
+    def __init__(self, experiment_name=None, filename=None):
+        super().__init__(experiment_name, filename)
     
     def loadheader(self, decodedfile):
         head = self.openfile(0,33,decodedfile)
