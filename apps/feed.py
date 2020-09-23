@@ -66,13 +66,11 @@ def parse_contents(contents, filename, date):
     content_type, content_string = contents.split(',')
     decoded = base64.b64decode(content_string)
     experiment_name = "Experiment_1" #This will be user defined
-    """
-    test = ConvertOptics(filename, experiment_name)
-    test.loaddata(decoded)
-    test.loadheader(decoded)
-    test.createfile()
-    """
-    print(current.experiment_name)
+    current.assignfilename(filename)
+    current.loaddata(decoded)
+    current.loadheader(decoded)
+    current.createfile()
+
     return html.Div([
         html.H5(filename),
         html.H6(datetime.datetime.fromtimestamp(date)),

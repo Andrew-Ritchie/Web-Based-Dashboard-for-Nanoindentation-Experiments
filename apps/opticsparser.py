@@ -28,6 +28,10 @@ class ConvertFormat:
     def assignexperiment(self, experimentname):
         self.experiment_name = experimentname
     
+    def assignfilename(self, filename):
+        self.filename = filename
+        self.data = {self.filename : {'header':{}, 'results':{} } }
+    
 
 
 class ConvertOptics(ConvertFormat):
@@ -54,6 +58,7 @@ class ConvertOptics(ConvertFormat):
         }
 
     def loaddata(self, decodedfile):
+        print(self.data)
         self.data[self.filename]['results'] ={"Time":[], "Load":[], "Indentation":[], "Cantilever":[], "Piezo":[], "Auxiliary":[]}
         rawdata = self.openfile(35,-1,decodedfile)
 
