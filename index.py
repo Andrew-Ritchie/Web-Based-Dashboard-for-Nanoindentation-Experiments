@@ -37,7 +37,7 @@ sidebar = html.Div(
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
     html.Div(children=[html.H1('Nanoindentation Application', style={'color': 'blue', 'fontSize': 50, 'font-family': 'verdana', 'textAlign': 'center', 'backgroundColor': '#EAF0F1'}), nav], style={'backgroundColor': '#EAF0F1', 'height': '87%'}),
-    html.Div(children=[sidebar],style={'float':'left'}),    
+    html.Div(id='side',children=[sidebar],style={'float':'left'}),    
     html.Div(id='page-content',style={"background-color": "#f8f9fa", 'textIndent':'50%'})
 ])
 
