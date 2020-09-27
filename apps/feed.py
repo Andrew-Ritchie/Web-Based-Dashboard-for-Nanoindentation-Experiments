@@ -16,23 +16,49 @@ import pandas as pd
 from app import app
 from apps.opticsparser import ConvertOptics
 
+
+SIDEBAR_STYLE = {
+    'box-sizing':'border-box',
+    'width': '20%',
+    'border-bottom': '5px solid red',
+    'float': 'left',
+    'text-indent': '5%',
+    'padding-bottom': '100%',
+    "background-color": "#EAF0F1",
+}
+MAIN_STYLE = {
+  'box-sizing':'border-box',
+  'width': '80%',
+  'border': '5px solid red',
+  'float': 'left',
+}
+sidebar = html.Div(
+    [
+        html.H2("Sidebar"),
+        
+    ]
+)
+
+
+
 current = ConvertOptics()
 layout = html.Div([
-    dcc.Upload(
+    html.Div([sidebar], style= SIDEBAR_STYLE),
+    html.Div([
+        dcc.Upload(
         id='upload-data',
         children=html.Div([
             'Drag and Drop or ',
             html.A('Select Files')
         ]),
         style={
-            'width': '50%',
+            'width': '25%',
             'height': '60px',
             'lineHeight': '60px',
             'borderWidth': '1px',
             'borderStyle': 'dashed',
-            'borderRadius': '5px',
-            'textAlign': 'center',
-            'margin': '10px',
+            'text-indent': '5%'
+            
         },
         # Allow multiple files to be uploaded
         multiple=True
@@ -40,7 +66,8 @@ layout = html.Div([
     dcc.Input(id="input2", type="text", placeholder="", debounce=True),
     html.Div(id="output"),
     html.Div(id='output-data-upload'),
-], style= {'padding-left': '30%', 'padding-right': '10%'})
+    ], style=MAIN_STYLE),
+], style={"display": 'flex', 'box-sizing': 'boarder-box'})
 
 @app.callback(
     Output("output", "children"),

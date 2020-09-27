@@ -21,23 +21,10 @@ nav = dbc.Nav(
     fill=True,
     pills=True
 )
-SIDEBAR_STYLE = {
-    "position": "fixed",
-    "padding": '10px',
-    "padding-bottom": '100%',
-    "background-color": "#EAF0F1",
-}
-sidebar = html.Div(
-    [
-        html.H2("Sidebar", className="display-4"),
-        
-    ],
-    style=SIDEBAR_STYLE,
-)
+
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
-    html.Div(children=[html.H1('Nanoindentation Application', style={'color': 'blue', 'fontSize': 50, 'font-family': 'verdana', 'textAlign': 'center', 'backgroundColor': '#EAF0F1'}), nav], style={'backgroundColor': '#EAF0F1', 'height': '87%'}),
-    html.Div(id='side',children=[sidebar],style={'float':'left'}),    
+    html.Div(children=[html.H1('Nanoindentation Application', style={'color': 'blue', 'fontSize': 50, 'font-family': 'verdana', 'textAlign': 'center', 'backgroundColor': '#EAF0F1'}), nav], style={'backgroundColor': '#EAF0F1', 'height': '87%'}),   
     html.Div(id='page-content',style={"background-color": "#f8f9fa", 'textIndent':'50%'})
 ])
 
