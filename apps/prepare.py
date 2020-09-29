@@ -45,6 +45,7 @@ current = ConvertOptics()
 layout = html.Div([
     html.Div([sidebar], style= SIDEBAR_STYLE),
     html.Div([
+        html.H2("Upload Data"),
         dcc.Upload(
         id='upload-data',
         children=html.Div([
@@ -52,7 +53,7 @@ layout = html.Div([
             html.A('Select Files')
         ]),
         style={
-            'width': '25%',
+            'width': '20%',
             'height': '60px',
             'lineHeight': '60px',
             'borderWidth': '1px',
@@ -64,7 +65,7 @@ layout = html.Div([
         multiple=True
     ),
     dcc.Input(id="input2", type="text", placeholder="", debounce=True),
-    html.Div(id="output"),
+    html.Div(id="output", style= {"text-indent": '0%'}),
     html.Div(id='output-data-upload'),
     ], style=MAIN_STYLE),
 ], style={"display": 'flex', 'box-sizing': 'boarder-box'})
@@ -92,7 +93,6 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
 def parse_contents(contents, filename, date):
     content_type, content_string = contents.split(',')
     decoded = base64.b64decode(content_string)
-    experiment_name = "Experiment_1" #This will be user defined
     current.assignfilename(filename)
     current.loaddata(decoded)
     current.loadheader(decoded)

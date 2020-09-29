@@ -5,8 +5,8 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 
 from app import app
-from apps import home, analysis, feed, about
-from apps.feed import parse_contents
+from apps import home, analysis, prepare, about
+from apps.prepare import parse_contents
 
 
 
@@ -14,7 +14,7 @@ nav = dbc.Nav(
     [
         dbc.NavItem(dbc.NavLink("Home", href="/apps/home")),
         dbc.NavItem(dbc.NavLink("Analysis", href="/apps/analysis")),
-        dbc.NavItem(dbc.NavLink("Feed", href="/apps/feed")),
+        dbc.NavItem(dbc.NavLink("Prepare", href="/apps/prepare")),
         dbc.NavItem(dbc.NavLink("About", href="/apps/about"))
     ],
     horizontal=True,
@@ -37,8 +37,8 @@ def display_page(pathname):
         return home.layout
     elif pathname == '/apps/analysis':
         return analysis.layout
-    elif pathname == '/apps/feed':
-        return feed.layout
+    elif pathname == '/apps/prepare':
+        return prepare.layout
     elif pathname == '/apps/about':
         return about.layout
     else:
