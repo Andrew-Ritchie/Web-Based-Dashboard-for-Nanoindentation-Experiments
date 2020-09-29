@@ -20,7 +20,7 @@ from apps.opticsparser import ConvertOptics
 SIDEBAR_STYLE = {
     'box-sizing':'border-box',
     'width': '20%',
-    'border-bottom': '5px solid red',
+    'border-bottom': '5px solid grey',
     'float': 'left',
     'text-indent': '5%',
     'padding-bottom': '100%',
@@ -29,7 +29,7 @@ SIDEBAR_STYLE = {
 MAIN_STYLE = {
   'box-sizing':'border-box',
   'width': '80%',
-  'border': '5px solid red',
+  'border': '5px solid grey',
   'float': 'left',
 }
 sidebar = html.Div(
@@ -38,8 +38,6 @@ sidebar = html.Div(
         
     ]
 )
-
-
 
 current = ConvertOptics()
 layout = html.Div([
@@ -77,18 +75,19 @@ layout = html.Div([
 def update_output2(input2):
     #create the experiment object
     current.assignexperiment(input2)
-    return u'Input 2 {}'.format(input2)
+    return u'Experiment Name: {}'.format(input2)
 
 @app.callback(Output('output-data-upload', 'children'),
               [Input('upload-data', 'contents')],
               State('upload-data', 'filename'),
                State('upload-data', 'last_modified'))
-def update_output(list_of_contents, list_of_names, list_of_dates):
+def update_output(list_of_contents, list_of_names, list_of_dates):  
     if list_of_contents is not None:
         children = [
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)] 
         return children
+    
 
 def parse_contents(contents, filename, date):
     content_type, content_string = contents.split(',')
