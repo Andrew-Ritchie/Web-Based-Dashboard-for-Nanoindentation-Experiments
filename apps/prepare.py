@@ -39,7 +39,7 @@ sidebar = html.Div(
     ]
 )
 
-current = ConvertOptics()
+current = ConvertOptics() 
 layout = html.Div([
     html.Div([sidebar], style= SIDEBAR_STYLE),
     html.Div([

@@ -7,10 +7,18 @@ import plotly.express as px
 import os
 from plotly.subplots import make_subplots
 import plotly.graph_objs as go
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from app import app
 
-experimentname = "Experiment_1"
+from apps.prepare import current
+
+def getname():
+    if current.experiment_name is not None:
+        return current.experiment_name
+    else:
+        return "Experiment_1"
+
+experimentname = getname()
 
 SIDEBAR_STYLE = {
     'box-sizing':'border-box',
@@ -98,8 +106,9 @@ layout = html.Div(children=[
     [dash.dependencies.Input('dropdown', 'value'),
     dash.dependencies.Input('dropdown2', 'value')])
 def update_output(dropdown_output, dropdown2_output):
-    x_data = data[experimentname]['2NapFF 16mgmL GdL S-1 X-1 Y-1 I-1.txt']['results'][dropdown_output][500:2500]
-    y_data = data[experimentname]['2NapFF 16mgmL GdL S-1 X-1 Y-1 I-1.txt']['results'][dropdown2_output][500:2500]
+    experimentname = getname()
+    x_data = data["Experiment_1"]['2NapFF 16mgmL GdL S-1 X-1 Y-1 I-1.txt']['results'][dropdown_output][500:2500]
+    y_data = data["Experiment_1"]['2NapFF 16mgmL GdL S-1 X-1 Y-1 I-1.txt']['results'][dropdown2_output][500:2500]
     fig2 = px.line(x=x_data, y=y_data)
     fig2.update_xaxes(title=dropdown_output)
     fig2.update_yaxes(title=dropdown2_output)
