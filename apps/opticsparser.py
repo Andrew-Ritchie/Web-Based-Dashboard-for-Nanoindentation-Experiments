@@ -1,29 +1,33 @@
 import json
 import re
-import os.path
+import os
 
 
 class ConvertFormat:
-    def __init__(self, experiment_name=None, filename=None):
+    def __init__(self, experiment_name=None, filename=None, samplename=None, setname=None):
         self.filename = filename
         self.experiment_name = experiment_name
         self.data = {self.filename : {'header':{}, 'results':{} } }
+        self.samplename = samplename
+        self.setname = setname
+
 
     def write_json(self, data, filename):
         with open(filename,'w') as f: 
             json.dump(data, f, indent=4) 
 
     def createfile(self):
-        if os.path.isfile('apps/converted/' + self.experiment_name + '.txt'):
-            with open('apps/converted/' + self.experiment_name + '.txt') as json_file:
+        if os.path.isfile('apps/converted/' + self.experiment_name + '/' + self.samplename + '/' + self.setname + '.txt'):
+            with open('apps/converted/' + self.experiment_name + '/' + self.samplename + '/' + self.setname + '.txt') as json_file:
                 data = json.load(json_file)
-                data[self.experiment_name].update(self.data)       
-            self.write_json(data, 'apps/converted/' + self.experiment_name + '.txt')       
+                data[self.setname].update(self.data)       
+            self.write_json(data, 'apps/converted/' + self.experiment_name + '/' + self.samplename + '/' + self.setname + '.txt')       
         else:
-            with open('apps/converted/' + self.experiment_name + '.txt', 'w+') as json_file:
-                data = {self.experiment_name: {}}
-                data[self.experiment_name].update(self.data)
-            self.write_json(data, 'apps/converted/' + self.experiment_name + '.txt')
+            os.makedirs(os.path.dirname('apps/converted/' + self.experiment_name + '/' + self.samplename + '/'))
+            with open('apps/converted/' + self.experiment_name + '/' + self.samplename + '/' + self.setname + '.txt', 'w+') as json_file:
+                data = {self.setname: {}}
+                data[self.setname].update(self.data)
+            self.write_json(data, 'apps/converted/' + self.experiment_name + '/' + self.samplename + '/' + self.setname + '.txt')
     
     def assignexperiment(self, experimentname):
         self.experiment_name = experimentname
@@ -31,6 +35,13 @@ class ConvertFormat:
     def assignfilename(self, filename):
         self.filename = filename
         self.data = {self.filename : {'header':{}, 'results':{} } }
+        
+    
+    def assignsampname(self, sampname):
+        self.samplename = sampname
+    
+    def assignsetname(self, setname):
+        self.setname = setname
     
 
 

@@ -44,9 +44,9 @@ sidebar = html.Div(
 
 uploadarea = html.Div([
     html.H2("Upload Experiment", style={'text-align': 'center'}),
-    dcc.Input(id="input2", type="text", placeholder="Experiment name", debounce=True),
-    dcc.Input(id="input3", type="text", placeholder="Sample name", debounce=True),
-    dcc.Input(id="input4", type="text", placeholder="Set name", debounce=True),
+    dcc.Input(id="expname", type="text", placeholder="Experiment name", debounce=True),
+    dcc.Input(id="samname", type="text", placeholder="Sample name", debounce=True),
+    dcc.Input(id="setname", type="text", placeholder="Set name", debounce=True),
     html.Div(id="output", style= {"text-indent": '0%'}),
     html.Div(id='output-data-upload'),
     dcc.Upload(
@@ -56,7 +56,7 @@ uploadarea = html.Div([
             html.A('Select Files')
         ]),
         style={
-            'width': '70%',
+            'width': '100%',
             'height': '60px',
             'lineHeight': '60px',
             'borderWidth': '1px',
@@ -77,6 +77,7 @@ uploadarea = html.Div([
 
 
 current = ConvertOptics() 
+
 layout = html.Div([
     html.Div([
         uploadarea
@@ -85,15 +86,53 @@ layout = html.Div([
     
     html.Div([
         html.Div([
-            html.H2("Upload Data"),
+            html.H2("Raw Data"),
+            html.Div(id='current-exp', style={'text-indent': '1.5%'}),
+            html.Div([
+                html.Div([dcc.Slider(vertical=True)], style={'float':'left'}),
+            
+            dcc.Graph(style={'float':'left', 'width':'60%', 'padding':'1%'}),
+            dcc.Graph(style={'float':'left', 'width': '30%', 'padding': '1%'}),
+            ],style={'padding':'1%'}),
+            html.Br(),
             dcc.Input(id="input2", type="text", placeholder="", debounce=True),
             html.Div(id="output", style= {"text-indent": '0%'}),
             html.Div(id='output-data-upload'),
             
-        ], style={'background-color': '#DDDDDD', 'margin': '1%'}),
+        ], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'}),
         
     ], style=MAIN_STYLE),
 ])
+
+@app.callback(
+    Output("current-exp", 'children'),
+    [Input("expname", "value")]
+)
+def experiment_name(value):
+    print(value)
+    current.assignexperiment(value)
+    return u'Experiment Name: {}'.format(value)
+
+
+@app.callback(
+    Output("samname", 'children'),
+    [Input("samname", "value")]
+)
+def sample_name(value):
+    print(value)
+    current.assignsampname(value)
+
+
+
+@app.callback(
+    Output("input2", 'children'),
+    [Input("setname", "value")]
+)
+def set_name(value):
+    print(value)
+    current.assignsetname(value)
+
+
 
 @app.callback(
     Output("output", "children"),
@@ -101,7 +140,6 @@ layout = html.Div([
 )
 def update_output2(input2):
     #create the experiment object
-    current.assignexperiment(input2)
     return u'Experiment Name: {}'.format(input2)
 
 @app.callback(Output('output-data-upload', 'children'),
