@@ -29,8 +29,10 @@ SIDEBAR_STYLE = {
 MAIN_STYLE = {
   'box-sizing':'border-box',
   'width': '80%',
-  'border': '5px solid grey',
   'float': 'left',
+  'background-color': '#AFAFAF',
+  'marign': '20%',
+  'padding-bottom': '100%'
 }
 sidebar = html.Div(
     [
@@ -39,34 +41,59 @@ sidebar = html.Div(
     ]
 )
 
-current = ConvertOptics() 
-layout = html.Div([
-    html.Div([sidebar], style= SIDEBAR_STYLE),
-    html.Div([
-        html.H2("Upload Data"),
-        dcc.Upload(
+
+uploadarea = html.Div([
+    html.H2("Upload Experiment", style={'text-align': 'center'}),
+    dcc.Input(id="input2", type="text", placeholder="Experiment name", debounce=True),
+    dcc.Input(id="input3", type="text", placeholder="Sample name", debounce=True),
+    dcc.Input(id="input4", type="text", placeholder="Set name", debounce=True),
+    html.Div(id="output", style= {"text-indent": '0%'}),
+    html.Div(id='output-data-upload'),
+    dcc.Upload(
         id='upload-data',
         children=html.Div([
             'Drag and Drop or ',
             html.A('Select Files')
         ]),
         style={
-            'width': '20%',
+            'width': '70%',
             'height': '60px',
             'lineHeight': '60px',
             'borderWidth': '1px',
             'borderStyle': 'dashed',
-            'text-indent': '5%'
+            'text-align': 'center'
             
         },
         # Allow multiple files to be uploaded
         multiple=True
-    ),
-    dcc.Input(id="input2", type="text", placeholder="", debounce=True),
-    html.Div(id="output", style= {"text-indent": '0%'}),
-    html.Div(id='output-data-upload'),
+    )
+
+], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'0%'})
+
+
+
+
+
+
+
+current = ConvertOptics() 
+layout = html.Div([
+    html.Div([
+        uploadarea
+    ], style= SIDEBAR_STYLE),
+    
+    
+    html.Div([
+        html.Div([
+            html.H2("Upload Data"),
+            dcc.Input(id="input2", type="text", placeholder="", debounce=True),
+            html.Div(id="output", style= {"text-indent": '0%'}),
+            html.Div(id='output-data-upload'),
+            
+        ], style={'background-color': '#DDDDDD', 'margin': '1%'}),
+        
     ], style=MAIN_STYLE),
-], style={"display": 'flex', 'box-sizing': 'boarder-box'})
+])
 
 @app.callback(
     Output("output", "children"),
