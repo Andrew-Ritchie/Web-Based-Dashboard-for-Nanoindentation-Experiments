@@ -3,6 +3,7 @@ import datetime
 import io
 import re 
 import codecs
+import numpy as np
 
 
 import dash
@@ -10,21 +11,27 @@ from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
+import plotly.graph_objs as go
+
 
 import pandas as pd
 
 from app import app
 from apps.opticsparser import ConvertOptics
+from accessdata import *
 
+#get data
+test = Experiment("apps/converted/exp1", "test")
+test.loadexperiment()
 
 SIDEBAR_STYLE = {
     'box-sizing':'border-box',
     'width': '20%',
-    'border-bottom': '5px solid grey',
+    'border': '1px solid black',
     'float': 'left',
     'text-indent': '5%',
     'padding-bottom': '100%',
-    "background-color": "#EAF0F1",
+    "background-color": "#EAF0F1"
 }
 MAIN_STYLE = {
   'box-sizing':'border-box',
@@ -68,7 +75,7 @@ uploadarea = html.Div([
         multiple=True
     )
 
-], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'0%'})
+], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
 
 
 
@@ -86,13 +93,13 @@ layout = html.Div([
     
     html.Div([
         html.Div([
-            html.H2("Raw Data"),
+            html.H2("Prepare Data"),
             html.Div(id='current-exp', style={'text-indent': '1.5%'}),
             html.Div([
-                html.Div([dcc.Slider(vertical=True)], style={'float':'left'}),
+                html.Div([dcc.Slider(id='slider',vertical=True)], style={'float':'left'}),
             
-            dcc.Graph(style={'float':'left', 'width':'60%', 'padding':'1%'}),
-            dcc.Graph(style={'float':'left', 'width': '30%', 'padding': '1%'}),
+            dcc.Graph(id='overviewgraph', style={'float':'left', 'width':'60%', 'padding':'1%', 'bgcolor': 'black'}),
+            dcc.Graph(id='comparsiongraph',style={'float':'left', 'width': '30%', 'padding': '1%'}),
             ],style={'padding':'1%'}),
             html.Br(),
             dcc.Input(id="input2", type="text", placeholder="", debounce=True),
@@ -103,6 +110,60 @@ layout = html.Div([
         
     ], style=MAIN_STYLE),
 ])
+
+@app.callback(
+    Output("comparsiongraph", 'figure'),
+    [Input('slider', 'value')]
+)
+def return_comparsion(value):
+    info = []
+    for i in test.samples:
+        print(i.name)
+        for x in i.sets:
+            print(x.name)
+            for y in x.indents:
+                info.append(go.Scatter(x=y.indentation[500:2500], y=y.load[500:2500], showlegend=False))
+
+    if value is not None:
+        info.append(go.Scatter(x=list(range(0,2000)), y=np.full(2001, value/150), showlegend=False))
+        print(value)
+
+    fig = go.Figure(data=info)
+    fig.update_layout(
+        title="Experiment Overview",
+        xaxis_title='Indentation',
+        yaxis_title='Load',
+        plot_bgcolor='#DDDDDD',
+        paper_bgcolor='#DDDDDD'
+    )
+    return fig
+
+@app.callback(
+    Output("overviewgraph", 'figure'),
+    [Input("slider", 'value')]
+)
+def return_graph(value):
+    info = []
+    for i in test.samples:
+        print(i.name)
+        for x in i.sets:
+            print(x.name)
+            for y in x.indents:
+                info.append(go.Scatter(x=y.indentation[500:2500], y=y.load[500:2500], name=x.name))
+
+    if value is not None:
+        info.append(go.Scatter(x=list(range(0,2000)), y=np.full(2001, value/150), name='Threshold'))
+        print(value)
+
+    fig = go.Figure(data=info)
+    fig.update_layout(
+        title="Experiment Overview",
+        xaxis_title='Indentation',
+        yaxis_title='Load',
+        plot_bgcolor='#DDDDDD',
+        paper_bgcolor='#DDDDDD'
+    )
+    return fig
 
 @app.callback(
     Output("current-exp", 'children'),

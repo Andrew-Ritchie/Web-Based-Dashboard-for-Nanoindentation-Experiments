@@ -20,12 +20,12 @@ nav = dbc.Nav(
     horizontal=True,
     fill=True,
     pills=True,
-    style={"padding-bottom":"10px"}
+    style={"padding-bottom":"10px", 'border': '1px solid black'}
 )
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
-    html.Div(children=[html.H1('Nanoindentation Application', style={'color': 'blue', 'fontSize': 50, 'font-family': 'verdana', 'textAlign': 'center', 'backgroundColor': '#AFAFAF'}), nav], style={'backgroundColor': '#EAF0F1', 'height': '87%'}),   
+    html.Div(children=[html.H1('Nanoindentation Application', style={'color': 'blue', 'fontSize': 50, 'font-family': 'verdana', 'textAlign': 'center', 'backgroundColor': '#AFAFAF'}), nav], style={'backgroundColor': '#EAF0F1', 'height': '87%', 'border': '1px solid black'}),   
     html.Div(id='page-content',style={"background-color": "#f8f9fa", 'textIndent':'50%'})
 ])
 
