@@ -24,6 +24,16 @@ from accessdata import *
 test = Experiment("apps/converted/exp1", "test")
 test.loadexperiment()
 
+
+def get_experiments():
+    options = []
+    for experiment in os.scandir("apps/converted"):
+        options.append({'label': experiment.name.split('.')[0], 'value': experiment.name.split('.')[0]})
+    return options
+
+
+
+
 SIDEBAR_STYLE = {
     'box-sizing':'border-box',
     'width': '20%',
@@ -77,6 +87,18 @@ uploadarea = html.Div([
 
 ], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
 
+selectexperiment = html.Div([
+    html.H2("Select Experiment", style={'text-align': 'center'}),
+    dcc.Dropdown(
+        id='selectexperiment',
+        options=get_experiments(),
+        placeholder="Experiment",
+        style={'width':'70%', 'box-sizing':'border-box'}
+    ),
+    html.Br()
+
+], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
+
 
 
 
@@ -87,7 +109,8 @@ current = ConvertOptics()
 
 layout = html.Div([
     html.Div([
-        uploadarea
+        uploadarea,
+        selectexperiment
     ], style= SIDEBAR_STYLE),
     
     
@@ -95,6 +118,13 @@ layout = html.Div([
         html.Div([
             html.H2("Prepare Data"),
             html.Div(id='current-exp', style={'text-indent': '1.5%'}),
+            dcc.Dropdown(
+            id='dropdown',
+            value="Indentation",
+            options=[{'label':'Seg1', 'value':'Seg1'}, {'label':'Seg2', 'value':'Seg2'}, {'label':'Seg3', 'value':'Seg3'}, {'label':'Seg4', 'value':'Seg4'}, {'label':'Seg5', 'value':'Seg5'}],
+            placeholder="Main Segment",
+            style={'width':'50%', 'box-sizing':'border-box', 'float':'right' }
+        ),
             html.Div([
                 html.Div([dcc.Slider(id='slider',vertical=True)], style={'float':'left'}),
             
@@ -105,11 +135,21 @@ layout = html.Div([
             dcc.Input(id="input2", type="text", placeholder="", debounce=True),
             html.Div(id="output", style= {"text-indent": '0%'}),
             html.Div(id='output-data-upload'),
+            html.Button('Convert', id='submit-val', n_clicks=0, style={'float':'right', 'box-sizing':'border-box', 'margin-right':'2%'}),
+            html.Pre(id='click-data'),
             
         ], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'}),
         
     ], style=MAIN_STYLE),
 ])
+
+@app.callback(
+    Output("current-exp", 'children'),
+    [Input("selectexperiment", "value")]
+)
+def exp(value):
+    return u'Experiment Name: {}'.format(value)
+
 
 @app.callback(
     Output("comparsiongraph", 'figure'),
@@ -162,7 +202,8 @@ def return_comparsion(value):
         xaxis_title='Indentation',
         yaxis_title='Load',
         plot_bgcolor='#DDDDDD',
-        paper_bgcolor='#DDDDDD'
+        paper_bgcolor='#DDDDDD',
+        clickmode='event+select'
     )
     return fig
 
@@ -195,7 +236,14 @@ def return_graph(value):
     return fig
 
 @app.callback(
-    Output("current-exp", 'children'),
+    Output('click-data', 'children'),
+    [Input('overviewgraph', 'clickData')])
+def display_click_data(clickData):
+    print('2')
+    return json.dumps(clickData, indent=2)
+
+@app.callback(
+    Output("current-ep", 'children'),
     [Input("expname", "value")]
 )
 def experiment_name(value):
