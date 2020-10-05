@@ -161,7 +161,8 @@ def return_comparsion(value):
         if value is not None:
             for x in sample.sets:
                 for y in x.indents:
-                    xtemp = y.indentation[500:2500]
+                    xtemp = y.piezo[500:2500]
+                    print(y.indentation[500:2500] == y.piezo[500:2500], "OIOIOI")
                     ytemp = y.load[500:2500]
                     for i, loadvalue in enumerate(ytemp):
                         if loadvalue < value/150:
@@ -220,15 +221,15 @@ def return_graph(value):
             sample.color = dict(color="#3498DB")
         for set1 in sample.sets:
             for indent in set1.indents:
-                info.append(go.Scatter(x=indent.indentation[500:2500], y=indent.load[500:2500], name=indent.name, line=sample.color))
+                info.append(go.Scatter(x=indent.piezo[500:2500], y=indent.load[500:2500], name=indent.name, line=sample.color))
 
     if value is not None:
-        info.append(go.Scatter(x=list(range(0,2000)), y=np.full(2001, value/150), name='Threshold'))
+        info.append(go.Scatter(x=list(range(0,10000)), y=np.full(10001, value/150), name='Threshold'))
 
     fig = go.Figure(data=info)
     fig.update_layout(
         title="Experiment Overview",
-        xaxis_title='Indentation',
+        xaxis_title='Displacement',
         yaxis_title='Load',
         plot_bgcolor='#DDDDDD',
         paper_bgcolor='#DDDDDD'
