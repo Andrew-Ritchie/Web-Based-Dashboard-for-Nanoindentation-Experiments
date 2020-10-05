@@ -20,6 +20,7 @@ class Sample():
         self.name = name
         self.sets = []
         self.loadsets()
+        self.color = None
     
     def loadsets(self):
         for inset in os.scandir(self.file):

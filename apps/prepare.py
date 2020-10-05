@@ -117,20 +117,48 @@ layout = html.Div([
 )
 def return_comparsion(value):
     info = []
-    for i in test.samples:
-        print(i.name)
-        for x in i.sets:
-            print(x.name)
-            for y in x.indents:
-                info.append(go.Scatter(x=y.indentation[500:2500], y=y.load[500:2500], showlegend=False))
+    for sample in test.samples:
+        if value is not None:
+            for x in sample.sets:
+                for y in x.indents:
+                    xtemp = y.indentation[500:2500]
+                    ytemp = y.load[500:2500]
+                    for i, loadvalue in enumerate(ytemp):
+                        if loadvalue < value/150:
+                            lasti = xtemp [i]
+                            lasty = ytemp[i]
+                            xtemp[i] = 0
+                            ytemp[i] = 0
+                            
+                    print(lasti)
+                    tempvalue = 0  
+                    for a, indvalue in enumerate(xtemp):
+                        if a == 0:
+                            xtemp[a] = 0
+                        if a != 0:
+                            xtemp[a] = xtemp[a] - xtemp[a-1] + tempvalue - lasti
+                            if xtemp[a] < 0:
+                                xtemp[a] = 0
+                            tempvalue = xtemp[a]
+                            
+                    tempvalue2 = 0
+                    for i, load in enumerate(ytemp):
+                        if i == 0:
+                            ytemp[i] = 0
+                        if i != 0:
+                            ytemp[i] = ytemp[i] - ytemp[i-1] + tempvalue2 - lasty
+                            if ytemp[i] < 0:
+                                ytemp[i] = 0
+                            tempvalue2 = ytemp[i]
+                                        
+                    info.append(go.Scatter(x=xtemp, y=ytemp, showlegend=False, line=sample.color))
 
-    if value is not None:
-        info.append(go.Scatter(x=list(range(0,2000)), y=np.full(2001, value/150), showlegend=False))
-        print(value)
+    
+
 
     fig = go.Figure(data=info)
     fig.update_layout(
-        title="Experiment Overview",
+        title="Indentation Comparison",
         xaxis_title='Indentation',
         yaxis_title='Load',
         plot_bgcolor='#DDDDDD',
@@ -144,16 +172,17 @@ def return_comparsion(value):
 )
 def return_graph(value):
     info = []
-    for i in test.samples:
-        print(i.name)
-        for x in i.sets:
-            print(x.name)
-            for y in x.indents:
-                info.append(go.Scatter(x=y.indentation[500:2500], y=y.load[500:2500], name=x.name))
+    for sample in test.samples:
+        if sample.name == 'glass':
+            sample.color = dict(color="#E44236")
+        else:
+            sample.color = dict(color="#3498DB")
+        for set1 in sample.sets:
+            for indent in set1.indents:
+                info.append(go.Scatter(x=indent.indentation[500:2500], y=indent.load[500:2500], name=indent.name, line=sample.color))
 
     if value is not None:
         info.append(go.Scatter(x=list(range(0,2000)), y=np.full(2001, value/150), name='Threshold'))
-        print(value)
 
     fig = go.Figure(data=info)
     fig.update_layout(
