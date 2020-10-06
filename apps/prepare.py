@@ -125,9 +125,9 @@ layout = html.Div([
                     {'label': 'Forward', 'value': 'NYC'},
                     {'label': 'Backward', 'value': 'MTL'},
                 ],
-                value=['NYC', 'MTL'],
+                value=[],
                 labelStyle={'display': 'inline-block', 'float':'left', 'width':'35%'},
-                )], style={'width': '49%', 'display': 'inline-block'}),
+                )], style={'width': '49%', 'display': 'inline-block', 'border': '1px solid black', 'margin-left': '1%', 'padding':'0%'}),
             
             html.Div([
                 dcc.Dropdown(
@@ -136,7 +136,7 @@ layout = html.Div([
                 options=[{'label':'Seg1', 'value':'Seg1'}, {'label':'Seg2', 'value':'Seg2'}, {'label':'Seg3', 'value':'Seg3'}, {'label':'Seg4', 'value':'Seg4'}, {'label':'Seg5', 'value':'Seg5'}],
                 placeholder="Forward",
                 style={}
-            )], style={'width': '22%', 'display': 'inline-block'}),
+            )], style={'width': '22%', 'display': 'inline-block', 'float':'right', 'border': '1px solid black'}),
             html.Div([
             dcc.Dropdown(
                 id='dropdown',
@@ -144,7 +144,7 @@ layout = html.Div([
                 options=[{'label':'Seg1', 'value':'Seg1'}, {'label':'Seg2', 'value':'Seg2'}, {'label':'Seg3', 'value':'Seg3'}, {'label':'Seg4', 'value':'Seg4'}, {'label':'Seg5', 'value':'Seg5'}],
                 placeholder="Backward",
                 style={}
-            )], style={'width': '22%', 'display': 'inline-block'}),
+            )], style={'width': '22%', 'display': 'inline-block', 'float':'right', 'border': '1px solid black'}),
            
            
             html.Div([
