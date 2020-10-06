@@ -15,7 +15,7 @@ class Experiment():
 
     def assignfilepath(self, filepath):
         self.filepath = filepath
-        
+
     def assignname(self, name):
         self.name = name
             
@@ -38,6 +38,7 @@ class Set():
         self.name = name
         self.file = files
         self.indents = []
+        self.segments = []
         self.loadindents()
     
     def loadindents(self):
@@ -47,13 +48,15 @@ class Set():
                 rawdata = Rawdata(element.split('.')[:-1][0])
                 rawdata.loaddata(data[self.name][element])
                 self.indents.append(rawdata)
+            self.segments = self.indents[0].segments
+            
                 
 
 class Rawdata():
     def __init__(self, name):
         #Header Info
         self.name = name
-        self.segments = []
+        self.segments = [0]
         self.mainsegment = None
 
         #Raw Information
@@ -71,5 +74,7 @@ class Rawdata():
         self.cantilever = data['results']['Cantilever']
         self.piezo = data['results']['Piezo']
         self.auxiliary = data['results']['Auxiliary']
+        self.segments += data['header']['indexes']
+
 
 

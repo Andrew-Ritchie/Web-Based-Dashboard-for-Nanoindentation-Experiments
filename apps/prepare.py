@@ -64,7 +64,6 @@ uploadarea = html.Div([
     dcc.Input(id="expname", type="text", placeholder="Experiment name", debounce=True),
     dcc.Input(id="samname", type="text", placeholder="Sample name", debounce=True),
     dcc.Input(id="setname", type="text", placeholder="Set name", debounce=True),
-    html.Div(id="output", style= {"text-indent": '0%'}),
     html.Div(id='output-data-upload'),
     dcc.Upload(
         id='upload-data',
@@ -131,18 +130,16 @@ layout = html.Div([
             
             html.Div([
                 dcc.Dropdown(
-                id='dropdown',
-                value="Indentation",
+                id='backward',
                 options=[{'label':'Seg1', 'value':'Seg1'}, {'label':'Seg2', 'value':'Seg2'}, {'label':'Seg3', 'value':'Seg3'}, {'label':'Seg4', 'value':'Seg4'}, {'label':'Seg5', 'value':'Seg5'}],
-                placeholder="Forward",
+                placeholder="Backward",
                 style={}
             )], style={'width': '22%', 'display': 'inline-block', 'float':'right', 'border': '1px solid black'}),
             html.Div([
             dcc.Dropdown(
-                id='dropdown',
-                value="Indentation",
+                id='forward',
                 options=[{'label':'Seg1', 'value':'Seg1'}, {'label':'Seg2', 'value':'Seg2'}, {'label':'Seg3', 'value':'Seg3'}, {'label':'Seg4', 'value':'Seg4'}, {'label':'Seg5', 'value':'Seg5'}],
-                placeholder="Backward",
+                placeholder="Forward",
                 style={}
             )], style={'width': '22%', 'display': 'inline-block', 'float':'right', 'border': '1px solid black'}),
            
@@ -156,6 +153,9 @@ layout = html.Div([
             html.Button('Convert', id='submit-val', n_clicks=0, style={'float':'right', 'box-sizing':'border-box', 'margin-right':'2%'}),
             html.H1('test'),
             html.Pre(id='click-data'),
+            html.P(id='one'),
+            html.P(id='two'),
+
 
             
         ], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'}),
@@ -186,34 +186,51 @@ def return_comparsion(value):
     info = []
     for sample in test.samples:
         if value is not None:
-            if sample.name == 'glass':
+            if sample.name == 'Glass':
                 sample.color = dict(color="#BB2CD9")
             else:
                 sample.color = dict(color="#3498DB")
             for sets in sample.sets:
+                print(sets.segments)
                 for indent in sets.indents:
                     xtemp = indent.piezo[500:2500]
                     ytemp = indent.load[500:2500]
+                    xtempback = indent.piezo[3500:5500]
+                    ytempback = indent.load[3500:5500]
                     for i, loadvalue in enumerate(ytemp):
                         if loadvalue < value/150:
                             lasti = xtemp [i]
                             lasty = ytemp[i]
                             xtemp[i] = 0
                             ytemp[i] = 0
-                            
+                    
+                    for i, loadvalue in enumerate(ytempback):
+                        if loadvalue < value/150:
+                            lastxback = xtempback[i]
+                            lastyback = ytempback[i]
+                            xtempback[i] = 0
+                            ytempback[i] = 0  
                     
                     for i in range(len(xtemp)):
                         xtemp[i] = xtemp[i] - lasti
+                        xtempback[i] = xtempback[i] - lastxback
                         if xtemp[i] < 0:
                             xtemp[i] = 0
+                        if xtempback[i] < 0:
+                            xtempback[i] = 0
                             
                     for i in range(len(ytemp)):                      
                         ytemp[i] = ytemp[i] - lasty
+                        ytempback[i] = ytempback[i] - lastyback
                         if ytemp[i] < 0:
                             ytemp[i] = 0
+                        if ytempback[i] < 0:
+                            ytempback[i] = 0
+
                         
                                         
                     info.append(go.Scatter(x=xtemp, y=ytemp, showlegend=False, line=sample.color))
+                    info.append(go.Scatter(x=xtempback, y=ytempback, showlegend=False, line=sample.color))
 
     fig = go.Figure(data=info)
     fig.update_layout(
@@ -236,13 +253,15 @@ def return_graph(value, value2):
     print(value2)
     if test.name is not None or value2 is not None:
         for sample in test.samples:
-            if sample.name == 'glass':
+            if sample.name == 'Glass':
                 sample.color = dict(color="#BB2CD9")
             else:
                 sample.color = dict(color="#3498DB")
             for set1 in sample.sets:
                 for indent in set1.indents:
-                    info.append(go.Scatter(x=indent.piezo[500:2500], y=indent.load[500:2500], name=indent.name, line=sample.color, showlegend=False))
+                    #info.append(go.Scatter(x=indent.piezo[500:2500], y=indent.load[500:2500], name=indent.name, line=sample.color, showlegend=False))
+                    info.append(go.Scatter(x=indent.piezo[3500:5500], y=indent.load[3500:5500], name=indent.name, line=sample.color, showlegend=False))
+                    
 
         if value is not None:
             info.append(go.Scatter(x=list(range(0,10000)), y=np.full(10001, value/150), name='Threshold', showlegend=False))
@@ -266,7 +285,7 @@ def display_click_data(clickData):
     return json.dumps(clickData, indent=2)
 
 @app.callback(
-    Output("current-ep", 'children'),
+    Output('one', 'children'),
     [Input("expname", "value")]
 )
 def experiment_name(value):
@@ -286,7 +305,7 @@ def sample_name(value):
 
 
 @app.callback(
-    Output("input2", 'children'),
+    Output('two', 'children'),
     [Input("setname", "value")]
 )
 def set_name(value):

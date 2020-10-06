@@ -61,11 +61,7 @@ class ConvertOptics(ConvertFormat):
             'youngsprovided': self.extractvalue(head[-2]),
             'xpos': self.extractvalue(head[3]),
             'ypos': self.extractvalue(head[4]),
-            'index1': self.extractindex(1,head),
-            'index2': self.extractindex(2,head),
-            'index3': self.extractindex(3,head),
-            'index4': self.extractindex(4,head),
-            'index5': self.extractindex(5,head),
+            'indexes': [self.extractindex(1,head), self.extractindex(2,head), self.extractindex(3,head), self.extractindex(4,head), self.extractindex(5,head)]
         }
 
     def loaddata(self, decodedfile):
