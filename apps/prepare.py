@@ -21,8 +21,8 @@ from apps.opticsparser import ConvertOptics
 from accessdata import *
 
 #get data
-test = Experiment("apps/converted/exp1", "test")
-test.loadexperiment()
+test = Experiment()
+
 
 
 def get_experiments():
@@ -118,25 +118,45 @@ layout = html.Div([
         html.Div([
             html.H2("Prepare Data"),
             html.Div(id='current-exp', style={'text-indent': '1.5%'}),
+            html.Div(children=[
+                html.P('Segment', style={'float':'left'}),
+                dcc.Checklist(
+                options=[
+                    {'label': 'Forward', 'value': 'NYC'},
+                    {'label': 'Backward', 'value': 'MTL'},
+                ],
+                value=['NYC', 'MTL'],
+                labelStyle={'display': 'inline-block', 'float':'left', 'width':'35%'},
+                )], style={'width': '49%', 'display': 'inline-block'}),
+            
+            html.Div([
+                dcc.Dropdown(
+                id='dropdown',
+                value="Indentation",
+                options=[{'label':'Seg1', 'value':'Seg1'}, {'label':'Seg2', 'value':'Seg2'}, {'label':'Seg3', 'value':'Seg3'}, {'label':'Seg4', 'value':'Seg4'}, {'label':'Seg5', 'value':'Seg5'}],
+                placeholder="Forward",
+                style={}
+            )], style={'width': '22%', 'display': 'inline-block'}),
+            html.Div([
             dcc.Dropdown(
-            id='dropdown',
-            value="Indentation",
-            options=[{'label':'Seg1', 'value':'Seg1'}, {'label':'Seg2', 'value':'Seg2'}, {'label':'Seg3', 'value':'Seg3'}, {'label':'Seg4', 'value':'Seg4'}, {'label':'Seg5', 'value':'Seg5'}],
-            placeholder="Main Segment",
-            style={'width':'50%', 'box-sizing':'border-box', 'float':'right' }
-        ),
+                id='dropdown',
+                value="Indentation",
+                options=[{'label':'Seg1', 'value':'Seg1'}, {'label':'Seg2', 'value':'Seg2'}, {'label':'Seg3', 'value':'Seg3'}, {'label':'Seg4', 'value':'Seg4'}, {'label':'Seg5', 'value':'Seg5'}],
+                placeholder="Backward",
+                style={}
+            )], style={'width': '22%', 'display': 'inline-block'}),
+           
+           
             html.Div([
                 html.Div([dcc.Slider(id='slider',vertical=True)], style={'float':'left'}),
-            
-            dcc.Graph(id='overviewgraph', style={'float':'left', 'width':'60%', 'padding':'1%', 'bgcolor': 'black'}),
-            dcc.Graph(id='comparsiongraph',style={'float':'left', 'width': '30%', 'padding': '1%'}),
-            ],style={'padding':'1%'}),
-            html.Br(),
-            dcc.Input(id="input2", type="text", placeholder="", debounce=True),
-            html.Div(id="output", style= {"text-indent": '0%'}),
-            html.Div(id='output-data-upload'),
+                dcc.Graph(id='overviewgraph', style={'float':'left', 'width':'65%', 'padding':'1%', 'bgcolor': 'black'}, config={'displayModeBar':False}),
+                dcc.Graph(id='comparsiongraph',style={'float':'left', 'width': '30%', 'padding': '1%'}, config={'displayModeBar':False}),
+            ],style={'padding':'0%'}),
+            html.Button('Convert', id='submit-val', n_clicks=0, style={'float':'left', 'box-sizing':'border-box', 'margin-right':'2%'}),
             html.Button('Convert', id='submit-val', n_clicks=0, style={'float':'right', 'box-sizing':'border-box', 'margin-right':'2%'}),
+            html.H1('test'),
             html.Pre(id='click-data'),
+
             
         ], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'}),
         
@@ -148,7 +168,14 @@ layout = html.Div([
     [Input("selectexperiment", "value")]
 )
 def exp(value):
-    return u'Experiment Name: {}'.format(value)
+    if value is not None:
+        test.assignname(value)
+        test.assignfilepath('apps/converted/' + test.name)
+        test.loadexperiment()
+        message = u'Experiment Name: {}'.format(value)
+    else:
+        message = u'Select an Experiment'
+    return message
 
 
 @app.callback(
@@ -159,6 +186,10 @@ def return_comparsion(value):
     info = []
     for sample in test.samples:
         if value is not None:
+            if sample.name == 'glass':
+                sample.color = dict(color="#BB2CD9")
+            else:
+                sample.color = dict(color="#3498DB")
             for sets in sample.sets:
                 for indent in sets.indents:
                     xtemp = indent.piezo[500:2500]
@@ -184,9 +215,6 @@ def return_comparsion(value):
                                         
                     info.append(go.Scatter(x=xtemp, y=ytemp, showlegend=False, line=sample.color))
 
-    
-
-
     fig = go.Figure(data=info)
     fig.update_layout(
         title="Indentation Comparison",
@@ -200,21 +228,24 @@ def return_comparsion(value):
 
 @app.callback(
     Output("overviewgraph", 'figure'),
-    [Input("slider", 'value')]
+    [Input("slider", 'value'),
+    Input("selectexperiment", "value2")]
 )
-def return_graph(value):
+def return_graph(value, value2):
     info = []
-    for sample in test.samples:
-        if sample.name == 'glass':
-            sample.color = dict(color="#E44236")
-        else:
-            sample.color = dict(color="#3498DB")
-        for set1 in sample.sets:
-            for indent in set1.indents:
-                info.append(go.Scatter(x=indent.piezo[500:2500], y=indent.load[500:2500], name=indent.name, line=sample.color))
+    print(value2)
+    if test.name is not None or value2 is not None:
+        for sample in test.samples:
+            if sample.name == 'glass':
+                sample.color = dict(color="#BB2CD9")
+            else:
+                sample.color = dict(color="#3498DB")
+            for set1 in sample.sets:
+                for indent in set1.indents:
+                    info.append(go.Scatter(x=indent.piezo[500:2500], y=indent.load[500:2500], name=indent.name, line=sample.color, showlegend=False))
 
-    if value is not None:
-        info.append(go.Scatter(x=list(range(0,10000)), y=np.full(10001, value/150), name='Threshold'))
+        if value is not None:
+            info.append(go.Scatter(x=list(range(0,10000)), y=np.full(10001, value/150), name='Threshold', showlegend=False))
 
     fig = go.Figure(data=info)
     fig.update_layout(
@@ -231,6 +262,7 @@ def return_graph(value):
     [Input('overviewgraph', 'clickData')])
 def display_click_data(clickData):
     print('2')
+
     return json.dumps(clickData, indent=2)
 
 @app.callback(

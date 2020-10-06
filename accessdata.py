@@ -3,7 +3,7 @@ import os
 
 
 class Experiment():
-    def __init__(self, filepath, name):
+    def __init__(self, filepath=None, name=None):
         self.filepath = filepath
         self.name = name
         self.samples = []
@@ -12,6 +12,12 @@ class Experiment():
         for sample in os.scandir(self.filepath):
             if os.path.isdir(sample):
                 self.samples.append(Sample(sample, sample.name))
+
+    def assignfilepath(self, filepath):
+        self.filepath = filepath
+        
+    def assignname(self, name):
+        self.name = name
             
 
 class Sample():
