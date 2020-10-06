@@ -159,11 +159,10 @@ def return_comparsion(value):
     info = []
     for sample in test.samples:
         if value is not None:
-            for x in sample.sets:
-                for y in x.indents:
-                    xtemp = y.piezo[500:2500]
-                    print(y.indentation[500:2500] == y.piezo[500:2500], "OIOIOI")
-                    ytemp = y.load[500:2500]
+            for sets in sample.sets:
+                for indent in sets.indents:
+                    xtemp = indent.piezo[500:2500]
+                    ytemp = indent.load[500:2500]
                     for i, loadvalue in enumerate(ytemp):
                         if loadvalue < value/150:
                             lasti = xtemp [i]
@@ -171,26 +170,17 @@ def return_comparsion(value):
                             xtemp[i] = 0
                             ytemp[i] = 0
                             
-                    print(lasti)
-                    tempvalue = 0  
-                    for a, indvalue in enumerate(xtemp):
-                        if a == 0:
-                            xtemp[a] = 0
-                        if a != 0:
-                            xtemp[a] = xtemp[a] - xtemp[a-1] + tempvalue - lasti
-                            if xtemp[a] < 0:
-                                xtemp[a] = 0
-                            tempvalue = xtemp[a]
+                    
+                    for i in range(len(xtemp)):
+                        xtemp[i] = xtemp[i] - lasti
+                        if xtemp[i] < 0:
+                            xtemp[i] = 0
                             
-                    tempvalue2 = 0
-                    for i, load in enumerate(ytemp):
-                        if i == 0:
+                    for i in range(len(ytemp)):                      
+                        ytemp[i] = ytemp[i] - lasty
+                        if ytemp[i] < 0:
                             ytemp[i] = 0
-                        if i != 0:
-                            ytemp[i] = ytemp[i] - ytemp[i-1] + tempvalue2 - lasty
-                            if ytemp[i] < 0:
-                                ytemp[i] = 0
-                            tempvalue2 = ytemp[i]
+                        
                                         
                     info.append(go.Scatter(x=xtemp, y=ytemp, showlegend=False, line=sample.color))
 
