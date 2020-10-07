@@ -57,7 +57,8 @@ class Rawdata():
         #Header Info
         self.name = name
         self.segments = [0]
-        self.mainsegment = None
+        self.forwardsegment = None
+        self.backwardsegment = None
 
         #Raw Information
         self.time = []
@@ -75,6 +76,12 @@ class Rawdata():
         self.piezo = data['results']['Piezo']
         self.auxiliary = data['results']['Auxiliary']
         self.segments += data['header']['indexes']
+    
+    def assignforward(self, forward):
+        self.forwardsegment = forward
+
+    def assignbackward(self, backward):
+        self.backwardsegment = backward
 
 
 

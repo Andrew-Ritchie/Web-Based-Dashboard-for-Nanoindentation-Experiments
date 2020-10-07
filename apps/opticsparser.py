@@ -23,7 +23,7 @@ class ConvertFormat:
                 data[self.setname].update(self.data)       
             self.write_json(data, 'apps/converted/' + self.experiment_name + '/' + self.samplename + '/' + self.setname + '.txt')       
         else:
-            os.makedirs(os.path.dirname('apps/converted/' + self.experiment_name + '/' + self.samplename + '/'))
+            #os.makedirs(os.path.dirname('apps/converted/' + self.experiment_name + '/' + self.samplename + '/' + self.setname + '.txt'))
             with open('apps/converted/' + self.experiment_name + '/' + self.samplename + '/' + self.setname + '.txt', 'w+') as json_file:
                 data = {self.setname: {}}
                 data[self.setname].update(self.data)

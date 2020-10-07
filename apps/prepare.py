@@ -19,6 +19,7 @@ import pandas as pd
 from app import app
 from apps.opticsparser import ConvertOptics
 from accessdata import *
+from experimenttree import experimenttree
 
 #get data
 test = Experiment()
@@ -94,7 +95,9 @@ selectexperiment = html.Div([
         placeholder="Experiment",
         style={'width':'70%', 'box-sizing':'border-box'}
     ),
-    html.Br()
+    experimenttree,
+    html.Br(),
+    
 
 ], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
 
@@ -155,14 +158,31 @@ layout = html.Div([
             html.Pre(id='click-data'),
             html.P(id='one'),
             html.P(id='two'),
-
+            dcc.Checklist(
+                options= [{'label': 'Forward', 'value': 'NYC'},
+                    {'label': 'Backward', 'value': 'MTL'},]
+            )
 
             
         ], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'}),
         
     ], style=MAIN_STYLE),
 ])
+'''
+@app.callback(
+    Output('forward', 'children'),
+    [Input('forward', 'value')]
+)
+def forward(value):
+    #assign forward segment
 
+@app.callback(
+    Output('backward', 'children'),
+    [Input('backward', 'value')]
+)
+def backward(value):
+    #assign backward segment
+'''
 @app.callback(
     Output("current-exp", 'children'),
     [Input("selectexperiment", "value")]
