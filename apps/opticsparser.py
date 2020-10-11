@@ -77,6 +77,7 @@ class ConvertOptics(ConvertFormat):
             self.data[self.filename]['results']["Cantilever"].append(float(info[3]))
             self.data[self.filename]['results']["Piezo"].append(float(info[4]))
             self.data[self.filename]['results']["Auxiliary"].append(float(info[5]))
+        return self.data[self.filename]
             
 
     

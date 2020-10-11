@@ -12,7 +12,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
 import plotly.graph_objs as go
-
+from zipfile import ZipFile
 
 import pandas as pd
 
@@ -20,6 +20,7 @@ from app import app
 from apps.opticsparser import ConvertOptics
 from accessdata import *
 from experimenttree import experimenttree
+from template import tem
 
 #get data
 test = Experiment()
@@ -93,9 +94,9 @@ selectexperiment = html.Div([
         id='selectexperiment',
         options=get_experiments(),
         placeholder="Experiment",
-        style={'width':'70%', 'box-sizing':'border-box'}
+        style={'width':'70%', 'box-sizing':'border-box', 'background-color':'#DDDDDD', 'text-color':'black'},
     ),
-    experimenttree,
+    html.Div(id='experiment-output'),
     html.Br(),
     
 
@@ -112,14 +113,15 @@ current = ConvertOptics()
 layout = html.Div([
     html.Div([
         uploadarea,
-        selectexperiment
+        selectexperiment,
+        html.H1('tem'),
     ], style= SIDEBAR_STYLE),
     
     
     html.Div([
         html.Div([
             html.H2("Prepare Data"),
-            html.Div(id='current-exp', style={'text-indent': '1.5%'}),
+            #html.Div(id='current-exp', style={'text-indent': '1.5%'}),
             html.Div(children=[
                 html.P('Segment', style={'float':'left'}),
                 dcc.Checklist(
@@ -168,6 +170,8 @@ layout = html.Div([
         
     ], style=MAIN_STYLE),
 ])
+
+
 '''
 @app.callback(
     Output('forward', 'children'),
@@ -197,6 +201,13 @@ def exp(value):
         message = u'Select an Experiment'
     return message
 
+@app.callback(
+    Output("experiment-output", 'children'),
+    [Input("selectexperiment", "value")]
+)
+def exp(value):
+    if value is not None:
+        return tem
 
 @app.callback(
     Output("comparsiongraph", 'figure'),
@@ -206,7 +217,7 @@ def return_comparsion(value):
     info = []
     for sample in test.samples:
         if value is not None:
-            if sample.name == 'Glass':
+            if sample == 'Glass':
                 sample.color = dict(color="#BB2CD9")
             else:
                 sample.color = dict(color="#3498DB")
@@ -348,15 +359,41 @@ def update_output2(input2):
                State('upload-data', 'last_modified'))
 def update_output(list_of_contents, list_of_names, list_of_dates):  
     if list_of_contents is not None:
+        #print(list_of_contents[10].decode('utf-8'))
+
+        for content, name, date in zip(list_of_contents, list_of_names, list_of_dates):
+            # the content needs to be split. It contains the type and the real content
+            content_type, content_string = content.split(',')
+            # Decode the base64 string
+            content_decoded = base64.b64decode(content_string)
+            # Use BytesIO to handle the decoded content
+            zip_str = io.BytesIO(content_decoded)
+            # Now you can use ZipFile to take the BytesIO output
+            zip_obj = ZipFile(zip_str, 'r')
+            
+            test.assignname(name.split('.')[0])
+            out = ConvertOptics()
+            for name in zip_obj.namelist():
+                if name.split('.')[-1] == 'txt':
+                    if name.split('/')[0] != '__MACOSX' and name.split('/')[2] != '' and name.split('/')[2] != '.DS_Store':
+                        test.loadsamples(name, zip_obj)
+                        
+                   
+
+    '''
+    if list_of_contents is not None:
         children = [
             parse_contents(c, n, d) for c, n, d in
             zip(list_of_contents, list_of_names, list_of_dates)] 
         return children
+    '''
+    
     
 
 def parse_contents(contents, filename, date):
     content_type, content_string = contents.split(',')
     decoded = base64.b64decode(content_string)
+    print(decoded[0:110])
     current.assignfilename(filename)
     current.loaddata(decoded)
     current.loadheader(decoded)
