@@ -9,7 +9,8 @@ class Experiment():
         self.filepath = filepath
         self.name = name
         self.samples = {}
-        self.samplenames = []
+        self.data = {}
+        print(self.name)
 
     def loadexperiment(self):
         for sample in os.scandir(self.filepath):
@@ -17,12 +18,16 @@ class Experiment():
                 self.samples.append(Sample(sample, sample.name))
                 self.samples.append(sample.name)
     
-    def loadsamples(self, name, zipobject):
-        samplename = name.split('/')[1]
-        if samplename not in self.samples:
-            self.samples[samplename] = [Sample(samplename, zipobject=zipobject, files=name)]
-        else:
-            self.samples[samplename].append(Sample(samplename, zipobject=zipobject, files=name))
+    def addsample(self, name):
+        #self.samples[name] = Sample(name, zip_obj, files)
+        self.data[name] = {}
+    def addset(self, samplename, setname):
+        self.data[samplename][setname] = {}
+    def addindent(self, samplename, setname, indentname, zipobject, files):
+        self.data[samplename][setname][indentname] = Rawdata(indentname, zipobject, files)
+    
+
+        
 
 
     def assignfilepath(self, filepath):
@@ -42,20 +47,22 @@ class Sample():
         self.sets = {}
         self.zipobject = zipobject
         #self.loadsets()
-        self.loadsets2(name, zipobject=self.zipobject)
+        self.loadsets2(zipobject=self.zipobject)
         self.color = None
-        print(self.name)
+        
     
     def loadsets(self):
         for inset in os.scandir(self.file):
             self.sets.append(Set(inset.name.split('.')[:-1][0], inset))
     
-    def loadsets2(self, name, zipobject):
-        setname = self.file.split('/')[2]
-        if setname not in self.sets:
-            self.sets[setname] = [Set(setname, zipobject=zipobject, files=self.file)]
-        else:
-            self.sets[setname].append(Set(setname, zipobject=zipobject, files=self.file))
+    
+    def loadsets2(self, zipobject):
+            setname = name.split('/')[2]
+            if setname not in self.sets.keys():
+                self.sets[setname] = [Set(setname, zipobject=zipobject, files=self.file)]
+                print(setname)
+    
+            
         
 
 
@@ -99,6 +106,14 @@ class Rawdata():
         self.segments = [0]
         self.forwardsegment = None
         self.backwardsegment = None
+        self.tipradius = None
+        self.calibrationfactor = None
+        self.cantileverk = None
+        self.youngsprovided = None
+        self.ypos = None
+        self.xpos = None
+        self.indexes = None 
+
         self.zip_obj = zipobject
         self.file = files
 
@@ -110,13 +125,14 @@ class Rawdata():
         self.piezo = []
         self.auxiliary = []
         self.convertdata()
-        print(self.time[0:100])
     
     def convertdata(self):
         data = b''
         for line in self.zip_obj.open(self.file):
             data += line
         self.loaddata(converter.loaddata(data))
+        self.loadheader(converter.loadheader(data))
+    
     
     def loaddata(self, data):
         self.time = data['results']['Time']
@@ -125,7 +141,16 @@ class Rawdata():
         self.cantilever = data['results']['Cantilever']
         self.piezo = data['results']['Piezo']
         self.auxiliary = data['results']['Auxiliary']
-        #self.segments += data['header']['indexes']
+
+    def loadheader(self, data):
+        self.tipradius = data['tipradius']
+        self.calibrationfactor = data['calibrationfactor']
+        self.cantileverk = data['cantileverk']
+        self.youngsprovided = data['youngsprovided']
+        self.ypos = data['ypos']
+        self.xpos = data['xpos']
+        self.segments += data['indexes']
+        print(self.segments)
     
     def assignforward(self, forward):
         self.forwardsegment = forward

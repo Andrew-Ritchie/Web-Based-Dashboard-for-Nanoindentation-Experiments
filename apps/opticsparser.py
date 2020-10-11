@@ -63,6 +63,7 @@ class ConvertOptics(ConvertFormat):
             'ypos': self.extractvalue(head[4]),
             'indexes': [self.extractindex(1,head), self.extractindex(2,head), self.extractindex(3,head), self.extractindex(4,head), self.extractindex(5,head)]
         }
+        return self.data[self.filename]['header']
 
     def loaddata(self, decodedfile):
         self.data[self.filename]['results'] ={"Time":[], "Load":[], "Indentation":[], "Cantilever":[], "Piezo":[], "Auxiliary":[]}

@@ -215,7 +215,8 @@ def exp(value):
 )
 def return_comparsion(value):
     info = []
-    for sample in test.samples:
+    for sample in test.samples.values():
+        print(test.samples.values())
         if value is not None:
             if sample == 'Glass':
                 sample.color = dict(color="#BB2CD9")
@@ -283,7 +284,8 @@ def return_graph(value, value2):
     info = []
     print(value2)
     if test.name is not None or value2 is not None:
-        for sample in test.samples:
+        print(test.samples.values())
+        for sample in test.samples.values():
             if sample.name == 'Glass':
                 sample.color = dict(color="#BB2CD9")
             else:
@@ -357,36 +359,39 @@ def update_output2(input2):
               [Input('upload-data', 'contents')],
               State('upload-data', 'filename'),
                State('upload-data', 'last_modified'))
-def update_output(list_of_contents, list_of_names, list_of_dates):  
+def update_output(list_of_contents, list_of_names, list_of_dates):
     if list_of_contents is not None:
-        #print(list_of_contents[10].decode('utf-8'))
-
-        for content, name, date in zip(list_of_contents, list_of_names, list_of_dates):
-            # the content needs to be split. It contains the type and the real content
-            content_type, content_string = content.split(',')
-            # Decode the base64 string
-            content_decoded = base64.b64decode(content_string)
-            # Use BytesIO to handle the decoded content
-            zip_str = io.BytesIO(content_decoded)
-            # Now you can use ZipFile to take the BytesIO output
-            zip_obj = ZipFile(zip_str, 'r')
+        if list_of_names[0].split('.')[-1] == 'zip':
             
-            test.assignname(name.split('.')[0])
-            out = ConvertOptics()
-            for name in zip_obj.namelist():
-                if name.split('.')[-1] == 'txt':
-                    if name.split('/')[0] != '__MACOSX' and name.split('/')[2] != '' and name.split('/')[2] != '.DS_Store':
-                        test.loadsamples(name, zip_obj)
-                        
-                   
+            for content, name, date in zip(list_of_contents, list_of_names, list_of_dates):
+                # the content needs to be split. It contains the type and the real content
+                content_type, content_string = content.split(',')
+                # Decode the base64 string
+                content_decoded = base64.b64decode(content_string)
+                # Use BytesIO to handle the decoded content
+                zip_str = io.BytesIO(content_decoded)
+                # Now you can use ZipFile to take the BytesIO output
+                zip_obj = ZipFile(zip_str, 'r')
+                
+                test.assignname(name.split('.')[0])
+                out = ConvertOptics()
+                for name in zip_obj.namelist():
+                    if name.split('.')[-1] == 'txt':
+                        if name.split('/')[0] != '__MACOSX' and name.split('/')[2] != '' and name.split('/')[2] != '.DS_Store':
+                            if name.split('/')[1] not in test.data:
+                                test.addsample(name.split('/')[1])
+                            if name.split('/')[2] not in test.data[name.split('/')[1]]:
+                                test.addset(name.split('/')[1], name.split('/')[2])
+                            if name.split('/')[3] not in test.data[name.split('/')[1]][name.split('/')[2]]:
+                                test.addindent(name.split('/')[1], name.split('/')[2], name.split('/')[3], zip_obj, name)
+            print(test.data)
 
-    '''
-    if list_of_contents is not None:
-        children = [
-            parse_contents(c, n, d) for c, n, d in
-            zip(list_of_contents, list_of_names, list_of_dates)] 
-        return children
-    '''
+        else:
+            children = [
+                parse_contents(c, n, d) for c, n, d in
+                zip(list_of_contents, list_of_names, list_of_dates)] 
+            return children
+    
     
     
 
