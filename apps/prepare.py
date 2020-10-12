@@ -215,8 +215,7 @@ def exp(value):
 )
 def return_comparsion(value):
     info = []
-    for sample in test.samples.values():
-        print(test.samples.values())
+    for sample in test.samples:
         if value is not None:
             if sample == 'Glass':
                 sample.color = dict(color="#BB2CD9")
@@ -284,8 +283,7 @@ def return_graph(value, value2):
     info = []
     print(value2)
     if test.name is not None or value2 is not None:
-        print(test.samples.values())
-        for sample in test.samples.values():
+        for sample in test.samples:
             if sample.name == 'Glass':
                 sample.color = dict(color="#BB2CD9")
             else:
@@ -378,13 +376,19 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
                 for name in zip_obj.namelist():
                     if name.split('.')[-1] == 'txt':
                         if name.split('/')[0] != '__MACOSX' and name.split('/')[2] != '' and name.split('/')[2] != '.DS_Store':
-                            if name.split('/')[1] not in test.data:
+                            #do same thing but with objects and 2 lists
+                            if name.split('/')[1] not in test.samplenames:
                                 test.addsample(name.split('/')[1])
-                            if name.split('/')[2] not in test.data[name.split('/')[1]]:
-                                test.addset(name.split('/')[1], name.split('/')[2])
-                            if name.split('/')[3] not in test.data[name.split('/')[1]][name.split('/')[2]]:
-                                test.addindent(name.split('/')[1], name.split('/')[2], name.split('/')[3], zip_obj, name)
-            print(test.data)
+                            sampleindex = test.samplenames.index(name.split('/')[1])
+                            if name.split('/')[2] not in test.samples[sampleindex].setnames:
+                                test.samples[sampleindex].addset(name.split('/')[2])
+                            setindex = test.samples[sampleindex].setnames.index(name.split('/')[2])
+                            if name.split('/')[3] not in test.samples[sampleindex].sets[setindex].indentnames:
+                                test.samples[sampleindex].sets[setindex].addindent(name.split('/')[3], zip_obj, name)
+            print(test.samplenames, test.samples, test.samples[0].name)
+            print(test.samples[0].setnames)
+            print(test.samples[0].sets[0].indentnames)
+            print(test.samples[0].sets[0].indents[0].time[0:100])
 
         else:
             children = [

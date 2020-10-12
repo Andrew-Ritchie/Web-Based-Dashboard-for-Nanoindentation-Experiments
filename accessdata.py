@@ -8,59 +8,36 @@ class Experiment():
     def __init__(self, filepath=None, name=None):
         self.filepath = filepath
         self.name = name
-        self.samples = {}
+        self.samples = []
+        self.samplenames = []
         self.data = {}
-        print(self.name)
 
-    def loadexperiment(self):
-        for sample in os.scandir(self.filepath):
-            if os.path.isdir(sample):
-                self.samples.append(Sample(sample, sample.name))
-                self.samples.append(sample.name)
-    
     def addsample(self, name):
-        #self.samples[name] = Sample(name, zip_obj, files)
-        self.data[name] = {}
-    def addset(self, samplename, setname):
-        self.data[samplename][setname] = {}
-    def addindent(self, samplename, setname, indentname, zipobject, files):
-        self.data[samplename][setname][indentname] = Rawdata(indentname, zipobject, files)
-    
+        self.samples.append(Sample(name))
+        self.samplenames.append(name)
 
-        
-
-
-    def assignfilepath(self, filepath):
-        self.filepath = filepath
 
     def assignname(self, name):
         self.name = name
 
-    def assignzipobject(self, obj):
-        self.zipobject = obj
+
             
 
 class Sample():
     def __init__(self, name, zipobject=None, files=None):
         self.file = files
         self.name = name
-        self.sets = {}
+        self.sets = []
+        self.setnames = []
         self.zipobject = zipobject
         #self.loadsets()
-        self.loadsets2(zipobject=self.zipobject)
+        #self.loadsets2(zipobject=self.zipobject)
         self.color = None
         
-    
-    def loadsets(self):
-        for inset in os.scandir(self.file):
-            self.sets.append(Set(inset.name.split('.')[:-1][0], inset))
-    
-    
-    def loadsets2(self, zipobject):
-            setname = name.split('/')[2]
-            if setname not in self.sets.keys():
-                self.sets[setname] = [Set(setname, zipobject=zipobject, files=self.file)]
-                print(setname)
+    def addset(self, setname):
+        self.sets.append(Set(setname))
+        self.setnames.append(setname)
+
     
             
         
@@ -73,27 +50,16 @@ class Set():
     def __init__(self, name, files=None, zipobject=None):
         self.name = name
         self.file = files
-        self.indents = {}
+        self.indentnames = []
+        self.indents = []
         self.segments = []
         self.zipobject = zipobject
         #self.loadindents()
-        self.loadindentszip(self.file)
-        
+        #self.loadindentszip(self.file)
     
-    def loadindents(self):
-        with open(self.file.path) as json_file:
-            data = json.load(json_file)
-            for element in data[self.name]:
-                rawdata = Rawdata(element.split('.')[:-1][0])
-                rawdata.loaddata(data[self.name][element])
-                self.indents.append(rawdata)
-            self.segments = self.indents[0].segments
-    
-    def loadindentszip(self, name):
-        indentname = self.file.split('/')[3]
-        if indentname not in self.indents:
-            self.indents[indentname] = [Rawdata(indentname, zipobject=self.zipobject, files=self.file)]
-        print(self.name)
+    def addindent(self, name, zip_obj, filepath):
+        self.indentnames.append(name)
+        self.indents.append(Rawdata(name, zipobject=zip_obj, files=filepath))
     
     
             
@@ -101,6 +67,9 @@ class Set():
 
 class Rawdata():
     def __init__(self, name, zipobject=None, files=None):
+        self.zip_obj = zipobject
+        self.file = files
+        
         #Header Info
         self.name = name
         self.segments = [0]
@@ -113,9 +82,6 @@ class Rawdata():
         self.ypos = None
         self.xpos = None
         self.indexes = None 
-
-        self.zip_obj = zipobject
-        self.file = files
 
         #Raw Information
         self.time = []
