@@ -8,13 +8,13 @@ class Experiment():
     def __init__(self, filepath=None, name=None):
         self.filepath = filepath
         self.name = name
-        self.samples = []
-        self.samplenames = []
+        self.samples = {}
         self.data = {}
 
     def addsample(self, name):
-        self.samples.append(Sample(name))
-        self.samplenames.append(name)
+        #self.samples.append(Sample(name))
+        #self.samplenames.append(name)
+        self.samples[name] = Sample(name)
 
 
     def assignname(self, name):
@@ -27,16 +27,16 @@ class Sample():
     def __init__(self, name, zipobject=None, files=None):
         self.file = files
         self.name = name
-        self.sets = []
-        self.setnames = []
+        self.sets = {}
         self.zipobject = zipobject
         #self.loadsets()
         #self.loadsets2(zipobject=self.zipobject)
         self.color = None
         
     def addset(self, setname):
-        self.sets.append(Set(setname))
-        self.setnames.append(setname)
+        #self.sets.append(Set(setname))
+        #self.setnames.append(setname)
+        self.sets[setname] = Set(setname)
 
     
             
@@ -50,16 +50,16 @@ class Set():
     def __init__(self, name, files=None, zipobject=None):
         self.name = name
         self.file = files
-        self.indentnames = []
-        self.indents = []
+        self.indents = {}
         self.segments = []
         self.zipobject = zipobject
         #self.loadindents()
         #self.loadindentszip(self.file)
     
     def addindent(self, name, zip_obj, filepath):
-        self.indentnames.append(name)
-        self.indents.append(Rawdata(name, zipobject=zip_obj, files=filepath))
+        #self.indentnames.append(name)
+        #self.indents.append(Rawdata(name, zipobject=zip_obj, files=filepath))
+        self.indents[name] = Rawdata(name, zipobject=zip_obj, files=filepath)
     
     
             

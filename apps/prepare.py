@@ -4,7 +4,7 @@ import io
 import re 
 import codecs
 import numpy as np
-
+import plotly.express as px
 
 import dash
 from dash.dependencies import Input, Output, State
@@ -215,15 +215,58 @@ def exp(value):
 )
 def return_comparsion(value):
     info = []
-    for sample in test.samples:
+    if value is not None:
+        rub = test.samplenames.index('Rubber')
+        setindex = test.samples[rub].setnames.index('Day1')
+        for indent in test.samples[rub].sets[setindex].indents:
+            xtemp = indent.piezo[500:2500]
+            ytemp = indent.load[500:2500]
+            xtempback = indent.piezo[3500:5500]
+            ytempback = indent.load[3500:5500]
+            for i, loadvalue in enumerate(ytemp):
+                if loadvalue < value/150:
+                    lasti = xtemp [i]
+                    lasty = ytemp[i]
+                    xtemp[i] = 0
+                    ytemp[i] = 0
+            
+            for i, loadvalue in enumerate(ytempback):
+                if loadvalue < value/150:
+                    lastxback = xtempback[i]
+                    lastyback = ytempback[i]
+                    xtempback[i] = 0
+                    ytempback[i] = 0  
+            
+            for i in range(len(xtemp)):
+                xtemp[i] = xtemp[i] - lasti
+                xtempback[i] = xtempback[i] - lastxback
+                if xtemp[i] < 0:
+                    xtemp[i] = 0
+                if xtempback[i] < 0:
+                    xtempback[i] = 0
+                    
+            for i in range(len(ytemp)):                      
+                ytemp[i] = ytemp[i] - lasty
+                ytempback[i] = ytempback[i] - lastyback
+                if ytemp[i] < 0:
+                    ytemp[i] = 0
+                if ytempback[i] < 0:
+                    ytempback[i] = 0
+
+                
+                                
+            info.append(go.Scatter(x=xtemp, y=ytemp, showlegend=False))
+            info.append(go.Scatter(x=xtempback, y=ytempback, showlegend=False))
+    '''
+    for sample in test.samples[0:1]:
         if value is not None:
             if sample == 'Glass':
                 sample.color = dict(color="#BB2CD9")
             else:
                 sample.color = dict(color="#3498DB")
-            for sets in sample.sets:
+            for sets in sample.sets[0:1]:
                 print(sets.segments)
-                for indent in sets.indents:
+                for indent in sets.indents[0:1]:
                     xtemp = indent.piezo[500:2500]
                     ytemp = indent.load[500:2500]
                     xtempback = indent.piezo[3500:5500]
@@ -262,7 +305,7 @@ def return_comparsion(value):
                                         
                     info.append(go.Scatter(x=xtemp, y=ytemp, showlegend=False, line=sample.color))
                     info.append(go.Scatter(x=xtempback, y=ytempback, showlegend=False, line=sample.color))
-
+    '''
     fig = go.Figure(data=info)
     fig.update_layout(
         title="Indentation Comparison",
@@ -280,18 +323,19 @@ def return_comparsion(value):
     Input("selectexperiment", "value2")]
 )
 def return_graph(value, value2):
+    for sam in test.samples:
+            for sets in sam.sets:
+                for indent in sets.indents:
+                    print('new')
+                    print(indent.time[0:100])
+    '''
     info = []
-    print(value2)
-    if test.name is not None or value2 is not None:
-        for sample in test.samples:
-            if sample.name == 'Glass':
-                sample.color = dict(color="#BB2CD9")
-            else:
-                sample.color = dict(color="#3498DB")
-            for set1 in sample.sets:
-                for indent in set1.indents:
+    if value is not None:
+        rub = test.samplenames.index('Rubber')
+        setindex = test.samples[rub].setnames.index('Day1')
+        for indent in test.samples[rub].sets[setindex].indents:
                     #info.append(go.Scatter(x=indent.piezo[500:2500], y=indent.load[500:2500], name=indent.name, line=sample.color, showlegend=False))
-                    info.append(go.Scatter(x=indent.piezo[3500:5500], y=indent.load[3500:5500], name=indent.name, line=sample.color, showlegend=False))
+                    info.append(go.Scatter(x=indent.piezo[3500:5500], y=indent.load[3500:5500], name=indent.name, showlegend=False))
                     
 
         if value is not None:
@@ -306,6 +350,60 @@ def return_graph(value, value2):
         paper_bgcolor='#DDDDDD'
     )
     return fig
+    '''
+    info = []
+    fig = go.Figure()
+    print(value2)
+    if test.name is not None or value2 is not None:
+        for sample in test.samples:
+            if sample.name == 'Glass':
+                sample.color = dict(color="#BB2CD9")
+            else:
+                sample.color = dict(color="#3498DB")
+            for set1 in sample.sets:
+                for indent in set1.indents:
+                    fig.add_trace(
+                        go.Scattergl(
+                            x = indent.piezo[3500:5500],
+                            y = indent.load[3500:5500],
+                            name = indent.name,
+                            line = sample.color,
+                            showlegend=False
+                            
+                        )
+                    )
+                    #info.append(go.Scatter(x=indent.piezo[500:2500], y=indent.load[500:2500], name=indent.name, line=sample.color, showlegend=False))
+                    #info.append(go.Scatter(x=indent.piezo[3500:5500], y=indent.load[3500:5500], name=indent.name, line=sample.color, showlegend=False))
+                    
+        
+        if value is not None:
+            #info.append(go.Scatter(x=list(range(0,10000)), y=np.full(10001, value/150), name='Threshold', showlegend=False))
+            fig.add_trace(
+                        go.Scattergl(
+                            x = list(range(0,10000)),
+                            y = np.full(10001, value/150),
+                            name = 'threshold',
+                            showlegend=False
+                            
+                        )
+                    )
+        
+            
+        
+    '''
+    fig = go.Figure(data=info)
+    fig.update_layout(
+        title="Experiment Overview",
+        xaxis_title='Displacement',
+        yaxis_title='Load',
+        plot_bgcolor='#DDDDDD',
+        paper_bgcolor='#DDDDDD'
+    )
+    '''
+    
+    return fig
+    
+    
 
 @app.callback(
     Output('click-data', 'children'),
@@ -377,18 +475,17 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
                     if name.split('.')[-1] == 'txt':
                         if name.split('/')[0] != '__MACOSX' and name.split('/')[2] != '' and name.split('/')[2] != '.DS_Store':
                             #do same thing but with objects and 2 lists
-                            if name.split('/')[1] not in test.samplenames:
+                            if name.split('/')[1] not in test.samples.keys():
                                 test.addsample(name.split('/')[1])
-                            sampleindex = test.samplenames.index(name.split('/')[1])
-                            if name.split('/')[2] not in test.samples[sampleindex].setnames:
-                                test.samples[sampleindex].addset(name.split('/')[2])
-                            setindex = test.samples[sampleindex].setnames.index(name.split('/')[2])
-                            if name.split('/')[3] not in test.samples[sampleindex].sets[setindex].indentnames:
-                                test.samples[sampleindex].sets[setindex].addindent(name.split('/')[3], zip_obj, name)
-            print(test.samplenames, test.samples, test.samples[0].name)
-            print(test.samples[0].setnames)
-            print(test.samples[0].sets[0].indentnames)
-            print(test.samples[0].sets[0].indents[0].time[0:100])
+                            
+                            if name.split('/')[2] not in test.samples[name.split('/')[1]].sets.keys():
+                                test.samples[name.split('/')[1]].addset(name.split('/')[2])
+
+                            if name.split('/')[3] not in test.samples[name.split('/')[1]].sets[name.split('/')[2]].indents.keys():
+                                test.samples[name.split('/')[1]].sets[name.split('/')[2]].addindent(name.split('/')[3], zip_obj, name)
+            
+            print(test.samples)
+            print(test.samples['Rubber'], test.samples['Rubber'].sets['Day2'].indents )
 
         else:
             children = [
