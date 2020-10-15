@@ -20,18 +20,14 @@ from app import app
 from apps.opticsparser import ConvertOptics
 from accessdata import *
 from experimenttree import experimenttree
-from template import tem
+from template import out
 
 #get data
 test = Experiment()
 
 
 
-def get_experiments():
-    options = []
-    for experiment in os.scandir("apps/converted"):
-        options.append({'label': experiment.name.split('.')[0], 'value': experiment.name.split('.')[0]})
-    return options
+
 
 
 
@@ -89,14 +85,8 @@ uploadarea = html.Div([
 ], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
 
 selectexperiment = html.Div([
-    html.H2("Select Experiment", style={'text-align': 'center'}),
-    dcc.Dropdown(
-        id='selectexperiment',
-        options=get_experiments(),
-        placeholder="Experiment",
-        style={'width':'70%', 'box-sizing':'border-box', 'background-color':'#DDDDDD', 'text-color':'black'},
-    ),
-    html.Div(id='experiment-output'),
+    html.Button(html.H2('Data Overview'), id='dataoverview', n_clicks=0, style={'box-sizing':'border-box', 'align':'center'}),
+    html.Div(id='select-experiment'),
     html.Br(),
     
 
@@ -202,12 +192,12 @@ def exp(value):
     return message
 
 @app.callback(
-    Output("experiment-output", 'children'),
-    [Input("selectexperiment", "value")]
+    Output("select-experiment", 'children'),
+    [Input("dataoverview", "n_clicks")]
 )
-def exp(value):
-    if value is not None:
-        return tem
+def exp1(value):
+    if value !=0:
+       return out(test) 
 
 @app.callback(
     Output("comparsiongraph", 'figure'),
@@ -215,6 +205,7 @@ def exp(value):
 )
 def return_comparsion(value):
     info = []
+    '''
     if value is not None:
         rub = test.samplenames.index('Rubber')
         setindex = test.samples[rub].setnames.index('Day1')
@@ -257,6 +248,8 @@ def return_comparsion(value):
                                 
             info.append(go.Scatter(x=xtemp, y=ytemp, showlegend=False))
             info.append(go.Scatter(x=xtempback, y=ytempback, showlegend=False))
+    '''
+
     '''
     for sample in test.samples[0:1]:
         if value is not None:
@@ -319,27 +312,28 @@ def return_comparsion(value):
 
 @app.callback(
     Output("overviewgraph", 'figure'),
-    [Input("slider", 'value'),
-    Input("selectexperiment", "value2")]
+    [Input("slider", 'value')]
 )
-def return_graph(value, value2):
+def return_graph(value):
+    '''
     for sam in test.samples:
             for sets in sam.sets:
                 for indent in sets.indents:
                     print('new')
                     print(indent.time[0:100])
     '''
+    
     info = []
-    if value is not None:
-        rub = test.samplenames.index('Rubber')
-        setindex = test.samples[rub].setnames.index('Day1')
-        for indent in test.samples[rub].sets[setindex].indents:
-                    #info.append(go.Scatter(x=indent.piezo[500:2500], y=indent.load[500:2500], name=indent.name, line=sample.color, showlegend=False))
-                    info.append(go.Scatter(x=indent.piezo[3500:5500], y=indent.load[3500:5500], name=indent.name, showlegend=False))
-                    
+    sample = 'Glass'
+    sets = ['Day2', 'Day1']
+    if value is not None and sample in test.samples.keys():
+        for s in sets:
+            for indent in test.samples[sample].sets[s].indents.values():
+                        #info.append(go.Scatter(x=indent.piezo[500:2500], y=indent.load[500:2500], name=indent.name, line=sample.color, showlegend=False))
+                        info.append(go.Scatter(x=indent.piezo[3500:5500], y=indent.load[3500:5500], name=indent.name, showlegend=False))
 
-        if value is not None:
-            info.append(go.Scatter(x=list(range(0,10000)), y=np.full(10001, value/150), name='Threshold', showlegend=False))
+        
+        info.append(go.Scatter(x=list(range(0,10000)), y=np.full(10001, value/150), name='Threshold', showlegend=False))
 
     fig = go.Figure(data=info)
     fig.update_layout(
@@ -390,7 +384,7 @@ def return_graph(value, value2):
         
             
         
-    '''
+    
     fig = go.Figure(data=info)
     fig.update_layout(
         title="Experiment Overview",
@@ -399,9 +393,9 @@ def return_graph(value, value2):
         plot_bgcolor='#DDDDDD',
         paper_bgcolor='#DDDDDD'
     )
+    
     '''
     
-    return fig
     
     
 
@@ -511,6 +505,9 @@ def parse_contents(contents, filename, date):
 
         html.Hr(),  # horizontal line
     ])
+
+
+
 
 
 

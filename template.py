@@ -11,15 +11,15 @@ setsglass = ['Day1', 'Day2']
 setsrubber = ['Day1', 'Day2']
 filenames = ['S-1 X-9 Y-6 I-1.txt', 'S-1 X-9 Y-6 I-2.txt', 'S-1 X-9 Y-6 I-3.txt' ]
 
-def listelement(samplename, sets, filenames, num):
+def listelement(samplename, exp, num):
     if num == 0:
         startvalue = 1
     else:
         startvalue = 3
     
     setlist = []
-    for num, name in enumerate(sets, start=startvalue):
-        setlist.append(generatesetlist(samplename, name, filenames, num))
+    for num, name in enumerate(exp.samples[samplename].sets.keys(), start=startvalue):
+        setlist.append(generatesetlist(samplename, name, exp, num))
         print(num)
 
     return html.Details(id= 'my-input',children=[
@@ -30,9 +30,9 @@ def listelement(samplename, sets, filenames, num):
             
         ] + setlist, style={'padding-left':'5%'})
 
-def generatesetlist(samplename, setname, filenames, index):
+def generatesetlist(samplename, setname, exp, index):
     opts = []
-    for element in filenames:
+    for element in exp.samples[samplename].sets[setname].indents.keys():
         opts.append({'label': element, 'value': samplename + '/' + setname + '/' + element})
     return html.Details(children=[
                 html.Summary([
@@ -51,21 +51,23 @@ def generatesetlist(samplename, setname, filenames, index):
 
 
 
-def generatelist(samples, sets, filenames):
+def generatelist(exp):
+    samples = exp.samples.keys()
     experimentlist = []
     for num, element in enumerate(samples):
-        experimentlist.append(listelement(element, sets, filenames, num))
+        experimentlist.append(listelement(element, exp, num))
     return experimentlist
         
 
 
 
 #x = html.Div([listelement(samples[0], setsglass[0], filenames, 0)])
-x = html.Div(generatelist(samples, setsglass, filenames))
-
-tem = html.Div([
-    x
-])
+def out(exp):
+    print(exp.name)
+    x = html.Div(generatelist(exp))
+    return html.Div([
+        x
+    ])
 
 @app.callback(
     Output('test1', 'value'),
