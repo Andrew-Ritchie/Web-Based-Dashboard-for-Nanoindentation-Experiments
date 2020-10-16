@@ -93,6 +93,13 @@ selectexperiment = html.Div([
 ], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
 
 
+selectfeature = html.Div([
+    html.H2("Features", style={'text-align': 'center'}),
+    html.Br(),
+    
+
+], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
+
 
 
 
@@ -104,11 +111,11 @@ layout = html.Div([
     html.Div([
         uploadarea,
         selectexperiment,
-        html.H1('tem'),
+        selectfeature,
     ], style= SIDEBAR_STYLE),
     
     
-    html.Div([
+    html.Div(id='mainfeed',children=[
         html.Div([
             html.H2("Prepare Data"),
             #html.Div(id='current-exp', style={'text-indent': '1.5%'}),
@@ -126,14 +133,12 @@ layout = html.Div([
             html.Div([
                 dcc.Dropdown(
                 id='backward',
-                options=[{'label':'Seg1', 'value':'Seg1'}, {'label':'Seg2', 'value':'Seg2'}, {'label':'Seg3', 'value':'Seg3'}, {'label':'Seg4', 'value':'Seg4'}, {'label':'Seg5', 'value':'Seg5'}],
                 placeholder="Backward",
                 style={}
             )], style={'width': '22%', 'display': 'inline-block', 'float':'right', 'border': '1px solid black'}),
             html.Div([
             dcc.Dropdown(
                 id='forward',
-                options=[{'label':'Seg1', 'value':'Seg1'}, {'label':'Seg2', 'value':'Seg2'}, {'label':'Seg3', 'value':'Seg3'}, {'label':'Seg4', 'value':'Seg4'}, {'label':'Seg5', 'value':'Seg5'}],
                 placeholder="Forward",
                 style={}
             )], style={'width': '22%', 'display': 'inline-block', 'float':'right', 'border': '1px solid black'}),
@@ -161,22 +166,45 @@ layout = html.Div([
     ], style=MAIN_STYLE),
 ])
 
-
-'''
 @app.callback(
-    Output('forward', 'children'),
-    [Input('forward', 'value')]
+    dash.dependencies.Output('forward', 'options'),
+    [dash.dependencies.Input("dataoverview", "n_clicks"),
+    dash.dependencies.Input("forward", "value")]
 )
-def forward(value):
-    #assign forward segment
+def update_forward_dropdown(click, selected):
+    outputvalues = []
+    if test.segments is not None:
+        for value in range(1, len(test.segments)):
+            name = u'Segment{}'.format(str(value))
+            outputvalues.append({'label': name, 'value': value})
+        if selected is not None:
+            if selected != 'None':
+                test.forwardseg = [selected-1, selected]
+                print(test.forwardseg)
+    else:
+        outputvalues = [{'label': 'Upload Experiment', 'value': 'None'}]
+    return outputvalues
 
 @app.callback(
-    Output('backward', 'children'),
-    [Input('backward', 'value')]
+    dash.dependencies.Output('backward', 'options'),
+    [dash.dependencies.Input("dataoverview", "n_clicks"),
+    dash.dependencies.Input("backward", "value")]
 )
-def backward(value):
-    #assign backward segment
-'''
+def update_backward_dropdown(click, selected):
+    outputvalues = []
+    if test.segments is not None:
+        for value in range(1, len(test.segments)):
+            name = u'Segment{}'.format(str(value))
+            outputvalues.append({'label': name, 'value': value})
+        if selected is not None:
+            if selected != 'None':
+                test.backwardseg = [selected-1, selected]
+                print(test.backwardseg)
+    else:
+        outputvalues = [{'label': 'Upload Experiment', 'value': 'boo'}]
+    return outputvalues
+
+
 @app.callback(
     Output("current-exp", 'children'),
     [Input("selectexperiment", "value")]
@@ -322,18 +350,26 @@ def return_graph(value):
                     print('new')
                     print(indent.time[0:100])
     '''
-    
     info = []
-    sample = 'Glass'
-    sets = ['Day2', 'Day1']
-    if value is not None and sample in test.samples.keys():
-        for s in sets:
-            for indent in test.samples[sample].sets[s].indents.values():
+    n = 0
+    for displaypaths in test.displaypaths:
+        if displaypaths != []:
+            samplename = displaypaths[0].split('/')[0]
+            setname = displaypaths[0].split('/')[1]
+            filenames = []
+            for element in displaypaths:
+                filenames.append(element.split('/')[2])
+            
+            if value is not None:
+                for indent in test.samples[samplename].sets[setname].indents.values():
+                    if indent.name in filenames:
+                        print('we did get here')
                         #info.append(go.Scatter(x=indent.piezo[500:2500], y=indent.load[500:2500], name=indent.name, line=sample.color, showlegend=False))
-                        info.append(go.Scatter(x=indent.piezo[3500:5500], y=indent.load[3500:5500], name=indent.name, showlegend=False))
+                        info.append(go.Scatter(x=indent.piezo[3500:5500], y=indent.load[3500:5500], name=indent.name, showlegend=False, line=test.availablecolors[n]))
+            n+=1 
 
-        
-        info.append(go.Scatter(x=list(range(0,10000)), y=np.full(10001, value/150), name='Threshold', showlegend=False))
+            
+            info.append(go.Scatter(x=list(range(0,10000)), y=np.full(10001, value/150), name='Threshold', showlegend=False))
 
     fig = go.Figure(data=info)
     fig.update_layout(
@@ -435,7 +471,7 @@ def set_name(value):
     print(value)
     current.assignsetname(value)
 
-
+dispaycurves = [ ]
 
 @app.callback(
     Output("output", "children"),
@@ -477,6 +513,7 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
 
                             if name.split('/')[3] not in test.samples[name.split('/')[1]].sets[name.split('/')[2]].indents.keys():
                                 test.samples[name.split('/')[1]].sets[name.split('/')[2]].addindent(name.split('/')[3], zip_obj, name)
+                                test.segments = test.samples[name.split('/')[1]].sets[name.split('/')[2]].indents[name.split('/')[3]].segments
             
             print(test.samples)
             print(test.samples['Rubber'], test.samples['Rubber'].sets['Day2'].indents )
@@ -506,8 +543,143 @@ def parse_contents(contents, filename, date):
         html.Hr(),  # horizontal line
     ])
 
+all_files = []
+
+def displayfunction(displaypaths):
+    if displaypaths != []:
+        samplename = displaypaths[0].split('/')[0]
+        setname = displaypaths[0].split('/')[1]
+        filenames = []
+        for element in displaypaths:
+            filenames.append(element.split('/')[2])
+        print(filenames)
+
+        for indent in test.samples[samplename].sets[setname].indents.values():
+            if indent.name in filenames:
+                print(indent.name, 'helloooo')
+                indent.displayflag = True
+            else:
+                print('turned flase')
+                indent.displayflag = False
 
 
 
+
+@app.callback(
+    Output('test1', 'value'),
+    [Input('button1', 'n_clicks')],
+    [State("test1", "options")]
+)
+def first(n_clicks, options):
+    if (n_clicks%2) == 0:
+        all_or_none = []
+    else:
+        all_or_none = [option["value"] for option in options]
+    return all_or_none
+
+@app.callback(
+    Output('test1', 'children'),
+    Input('test1', 'value')
+)
+def tes(value):
+    displayfunction(value)
+    test.displaypaths[0] = value
+    print('value from template First', value)
+
+
+
+
+@app.callback(
+    Output('test2', 'value'),
+    [Input('button2', 'n_clicks')],
+    [State("test2", "options")]
+)
+def test2a(n_clicks, options):
+    if (n_clicks%2) == 0:
+        all_or_none = []
+    else:
+        all_or_none = [option["value"] for option in options]
+        print(all_or_none)
+    return all_or_none
+
+@app.callback(
+    Output('test2', 'children'),
+    Input('test2', 'value')
+)
+def test2b(value):
+    test.displaypaths[1] = value
+    print('value from template First', value)
+
+@app.callback(
+    Output('test3', 'value'),
+    [Input('button3', 'n_clicks')],
+    [State("test3", "options")]
+)
+def test3a(n_clicks, options):
+    if (n_clicks%2) == 0:
+        all_or_none = []
+    else:
+        all_or_none = [option["value"] for option in options]
+        print(all_or_none)
+    return all_or_none
+
+@app.callback(
+    Output('test3', 'children'),
+    Input('test3', 'value')
+)
+def test3b(value):
+    print('value from template First', value)
+    test.displaypaths[2] = value
+
+
+
+
+
+@app.callback(
+    Output('test4', 'value'),
+    [Input('button4', 'n_clicks')],
+    [State("test4", "options")]
+)
+def test4a(n_clicks, options):
+    if (n_clicks%2) == 0:
+        all_or_none = []
+    else:
+        all_or_none = [option["value"] for option in options]
+        print(all_or_none)
+    return all_or_none
+
+@app.callback(
+    Output('test4', 'children'),
+    Input('test4', 'value')
+)
+def test4b(value):
+    print('value from template First', value)
+    test.displaypaths[3] = value
+
+
+
+
+
+
+@app.callback(
+    Output('second', 'children'),
+    Input('second', 'value')
+)
+def second(value):
+        print('value from template SECOND', value)
+
+@app.callback(
+    Output('third', 'children'),
+    Input('third', 'value')
+)
+def thrid(value):
+    print('value from template THIIRD', value)
+
+@app.callback(
+    Output('fourth', 'children'),
+    Input('fourth', 'value')
+)
+def fouth(value):
+        print('oi oi fourth', value)
 
 
