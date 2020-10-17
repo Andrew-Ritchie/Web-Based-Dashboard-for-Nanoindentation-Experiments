@@ -122,9 +122,10 @@ layout = html.Div([
             html.Div(children=[
                 html.P('Segment', style={'float':'left'}),
                 dcc.Checklist(
+                id='segmentselector',
                 options=[
-                    {'label': 'Forward', 'value': 'NYC'},
-                    {'label': 'Backward', 'value': 'MTL'},
+                    {'label': 'Forward', 'value': 'forward'},
+                    {'label': 'Backward', 'value': 'backward'},
                 ],
                 value=[],
                 labelStyle={'display': 'inline-block', 'float':'left', 'width':'35%'},
@@ -165,6 +166,7 @@ layout = html.Div([
         
     ], style=MAIN_STYLE),
 ])
+
 
 @app.callback(
     dash.dependencies.Output('forward', 'options'),
@@ -229,9 +231,11 @@ def exp1(value):
 
 @app.callback(
     Output("comparsiongraph", 'figure'),
-    [Input('slider', 'value')]
+    [Input('slider', 'value'),
+    Input('segmentselector', 'value')]
 )
-def return_comparsion(value):
+def return_comparsion(value, segment):
+    print(segment)
     info = []
     '''
     if value is not None:
@@ -338,99 +342,8 @@ def return_comparsion(value):
     )
     return fig
 
-@app.callback(
-    Output("overviewgraph", 'figure'),
-    [Input("slider", 'value')]
-)
-def return_graph(value):
-    '''
-    for sam in test.samples:
-            for sets in sam.sets:
-                for indent in sets.indents:
-                    print('new')
-                    print(indent.time[0:100])
-    '''
-    info = []
-    n = 0
-    for displaypaths in test.displaypaths:
-        if displaypaths != []:
-            samplename = displaypaths[0].split('/')[0]
-            setname = displaypaths[0].split('/')[1]
-            filenames = []
-            for element in displaypaths:
-                filenames.append(element.split('/')[2])
-            
-            if value is not None:
-                for indent in test.samples[samplename].sets[setname].indents.values():
-                    if indent.name in filenames:
-                        print('we did get here')
-                        #info.append(go.Scatter(x=indent.piezo[500:2500], y=indent.load[500:2500], name=indent.name, line=sample.color, showlegend=False))
-                        info.append(go.Scatter(x=indent.piezo[3500:5500], y=indent.load[3500:5500], name=indent.name, showlegend=False, line=test.availablecolors[n]))
-            n+=1 
 
-            
-            info.append(go.Scatter(x=list(range(0,10000)), y=np.full(10001, value/150), name='Threshold', showlegend=False))
-
-    fig = go.Figure(data=info)
-    fig.update_layout(
-        title="Experiment Overview",
-        xaxis_title='Displacement',
-        yaxis_title='Load',
-        plot_bgcolor='#DDDDDD',
-        paper_bgcolor='#DDDDDD'
-    )
-    return fig
-    '''
-    info = []
-    fig = go.Figure()
-    print(value2)
-    if test.name is not None or value2 is not None:
-        for sample in test.samples:
-            if sample.name == 'Glass':
-                sample.color = dict(color="#BB2CD9")
-            else:
-                sample.color = dict(color="#3498DB")
-            for set1 in sample.sets:
-                for indent in set1.indents:
-                    fig.add_trace(
-                        go.Scattergl(
-                            x = indent.piezo[3500:5500],
-                            y = indent.load[3500:5500],
-                            name = indent.name,
-                            line = sample.color,
-                            showlegend=False
-                            
-                        )
-                    )
-                    #info.append(go.Scatter(x=indent.piezo[500:2500], y=indent.load[500:2500], name=indent.name, line=sample.color, showlegend=False))
-                    #info.append(go.Scatter(x=indent.piezo[3500:5500], y=indent.load[3500:5500], name=indent.name, line=sample.color, showlegend=False))
-                    
-        
-        if value is not None:
-            #info.append(go.Scatter(x=list(range(0,10000)), y=np.full(10001, value/150), name='Threshold', showlegend=False))
-            fig.add_trace(
-                        go.Scattergl(
-                            x = list(range(0,10000)),
-                            y = np.full(10001, value/150),
-                            name = 'threshold',
-                            showlegend=False
-                            
-                        )
-                    )
-        
-            
-        
     
-    fig = go.Figure(data=info)
-    fig.update_layout(
-        title="Experiment Overview",
-        xaxis_title='Displacement',
-        yaxis_title='Load',
-        plot_bgcolor='#DDDDDD',
-        paper_bgcolor='#DDDDDD'
-    )
-    
-    '''
     
     
     
@@ -575,15 +488,17 @@ def first(n_clicks, options):
         all_or_none = []
     else:
         all_or_none = [option["value"] for option in options]
+    test.displaypaths[0] = all_or_none
     return all_or_none
 
 @app.callback(
     Output('test1', 'children'),
-    Input('test1', 'value')
+    [Input('select-experiment', 'n_clicks'), Input('test1', 'value')]
 )
-def tes(value):
-    displayfunction(value)
+def tes(val, value):
+    #displayfunction(value)
     test.displaypaths[0] = value
+    test.flag = True
     print('value from template First', value)
 
 
@@ -591,43 +506,43 @@ def tes(value):
 
 @app.callback(
     Output('test2', 'value'),
-    [Input('button2', 'n_clicks')],
+    [Input('select-experiment', 'n_clicks'), Input('button2', 'n_clicks')],
     [State("test2", "options")]
 )
-def test2a(n_clicks, options):
+def test2a(val, n_clicks, options):
     if (n_clicks%2) == 0:
         all_or_none = []
     else:
         all_or_none = [option["value"] for option in options]
-        print(all_or_none)
+    test.displaypaths[1] = all_or_none
     return all_or_none
 
 @app.callback(
     Output('test2', 'children'),
-    Input('test2', 'value')
+    [Input('select-experiment', 'n_clicks'), Input('test2', 'value')]
 )
-def test2b(value):
+def test2b(val, value):
     test.displaypaths[1] = value
     print('value from template First', value)
 
 @app.callback(
     Output('test3', 'value'),
-    [Input('button3', 'n_clicks')],
+    [Input('select-experiment', 'n_clicks'), Input('button3', 'n_clicks')],
     [State("test3", "options")]
 )
-def test3a(n_clicks, options):
+def test3a(val, n_clicks, options):
     if (n_clicks%2) == 0:
         all_or_none = []
     else:
         all_or_none = [option["value"] for option in options]
-        print(all_or_none)
+    test.displaypaths[2] = all_or_none
     return all_or_none
 
 @app.callback(
     Output('test3', 'children'),
-    Input('test3', 'value')
+    [Input('select-experiment', 'n_clicks'), Input('test3', 'value')]
 )
-def test3b(value):
+def test3b(val, value):
     print('value from template First', value)
     test.displaypaths[2] = value
 
@@ -637,22 +552,22 @@ def test3b(value):
 
 @app.callback(
     Output('test4', 'value'),
-    [Input('button4', 'n_clicks')],
+    [Input('select-experiment', 'n_clicks'), Input('button4', 'n_clicks')],
     [State("test4", "options")]
 )
-def test4a(n_clicks, options):
+def test4a(val, n_clicks, options):
     if (n_clicks%2) == 0:
         all_or_none = []
     else:
         all_or_none = [option["value"] for option in options]
-        print(all_or_none)
+    test.displaypaths[3] = all_or_none
     return all_or_none
 
 @app.callback(
     Output('test4', 'children'),
-    Input('test4', 'value')
+    [Input('select-experiment', 'n_clicks'), Input('test4', 'value')]
 )
-def test4b(value):
+def test4b(val, value):
     print('value from template First', value)
     test.displaypaths[3] = value
 
@@ -682,4 +597,44 @@ def thrid(value):
 def fouth(value):
         print('oi oi fourth', value)
 
+prev = None
 
+@app.callback(
+    Output("overviewgraph", 'figure'),
+    [Input("slider", 'value'),
+    Input('segmentselector', 'value'),
+    Input('select-experiment', 'n_clicks')]
+)
+def return_graph(value, segment, new):
+    print(new, 'test here')  
+    info = []
+    n = 0
+    if segment != []:
+        for displaypaths in test.displaypaths:
+            if displaypaths != []:
+                samplename = displaypaths[0].split('/')[0]
+                setname = displaypaths[0].split('/')[1]
+                filenames = []
+                for element in displaypaths:
+                    filenames.append(element.split('/')[2])
+                
+                for indent in test.samples[samplename].sets[setname].indents.values():
+                    if indent.name in filenames:
+                        if 'forward' in segment:
+                            info.append(go.Scatter(x=indent.piezo[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]], y=indent.load[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]], name=indent.name, line=test.availablecolors[n], showlegend=False))
+                        if 'backward' in segment:
+                            info.append(go.Scatter(x=indent.piezo[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]], y=indent.load[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]], name=indent.name, showlegend=False, line=test.availablecolors[n]))
+                n+=1 
+
+                if value is not None:
+                    info.append(go.Scatter(x=list(range(0,10000)), y=np.full(10001, value/150), name='Threshold', showlegend=False))
+
+    fig = go.Figure(data=info)
+    fig.update_layout(
+        title="Experiment Overview",
+        xaxis_title='Displacement',
+        yaxis_title='Load',
+        plot_bgcolor='#DDDDDD',
+        paper_bgcolor='#DDDDDD'
+    )
+    return fig

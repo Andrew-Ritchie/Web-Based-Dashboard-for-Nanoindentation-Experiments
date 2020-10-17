@@ -14,6 +14,7 @@ class Experiment():
         self.backwardseg = None
         self.data = {}
         self.displaypaths = [[],[],[],[]]
+        self.flag = False
         self.availablecolors = [dict(color="#BB2CD9"), dict(color='#C7980A'), dict(color='#F4651F'), dict(color='#82D8A7'), dict(color='#CC3A05'), dict(color='#575E76'), dict(color='#156943'), dict(color='#0BD055'), dict(color='#ACD338')]
 
     def addsample(self, name):
