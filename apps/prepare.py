@@ -90,7 +90,7 @@ selectexperiment = html.Div([
     html.Br(),
     
 
-], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
+], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black', "maxHeight": "400px", "overflow": "scroll"})
 
 
 selectfeature = html.Div([
@@ -237,100 +237,63 @@ def exp1(value):
 def return_comparsion(value, segment):
     print(segment)
     info = []
-    '''
-    if value is not None:
-        rub = test.samplenames.index('Rubber')
-        setindex = test.samples[rub].setnames.index('Day1')
-        for indent in test.samples[rub].sets[setindex].indents:
-            xtemp = indent.piezo[500:2500]
-            ytemp = indent.load[500:2500]
-            xtempback = indent.piezo[3500:5500]
-            ytempback = indent.load[3500:5500]
-            for i, loadvalue in enumerate(ytemp):
-                if loadvalue < value/150:
-                    lasti = xtemp [i]
-                    lasty = ytemp[i]
-                    xtemp[i] = 0
-                    ytemp[i] = 0
-            
-            for i, loadvalue in enumerate(ytempback):
-                if loadvalue < value/150:
-                    lastxback = xtempback[i]
-                    lastyback = ytempback[i]
-                    xtempback[i] = 0
-                    ytempback[i] = 0  
-            
-            for i in range(len(xtemp)):
-                xtemp[i] = xtemp[i] - lasti
-                xtempback[i] = xtempback[i] - lastxback
-                if xtemp[i] < 0:
-                    xtemp[i] = 0
-                if xtempback[i] < 0:
-                    xtempback[i] = 0
-                    
-            for i in range(len(ytemp)):                      
-                ytemp[i] = ytemp[i] - lasty
-                ytempback[i] = ytempback[i] - lastyback
-                if ytemp[i] < 0:
-                    ytemp[i] = 0
-                if ytempback[i] < 0:
-                    ytempback[i] = 0
-
+    n = 0
+    if segment != []:
+        for displaypaths in test.displaypaths:
+            if displaypaths != []:
+                samplename = displaypaths[0].split('/')[0]
+                setname = displaypaths[0].split('/')[1]
+                filenames = []
+                for element in displaypaths:
+                    filenames.append(element.split('/')[2])
                 
-                                
-            info.append(go.Scatter(x=xtemp, y=ytemp, showlegend=False))
-            info.append(go.Scatter(x=xtempback, y=ytempback, showlegend=False))
-    '''
-
-    '''
-    for sample in test.samples[0:1]:
-        if value is not None:
-            if sample == 'Glass':
-                sample.color = dict(color="#BB2CD9")
-            else:
-                sample.color = dict(color="#3498DB")
-            for sets in sample.sets[0:1]:
-                print(sets.segments)
-                for indent in sets.indents[0:1]:
-                    xtemp = indent.piezo[500:2500]
-                    ytemp = indent.load[500:2500]
-                    xtempback = indent.piezo[3500:5500]
-                    ytempback = indent.load[3500:5500]
-                    for i, loadvalue in enumerate(ytemp):
-                        if loadvalue < value/150:
-                            lasti = xtemp [i]
-                            lasty = ytemp[i]
-                            xtemp[i] = 0
-                            ytemp[i] = 0
-                    
-                    for i, loadvalue in enumerate(ytempback):
-                        if loadvalue < value/150:
-                            lastxback = xtempback[i]
-                            lastyback = ytempback[i]
-                            xtempback[i] = 0
-                            ytempback[i] = 0  
-                    
-                    for i in range(len(xtemp)):
-                        xtemp[i] = xtemp[i] - lasti
-                        xtempback[i] = xtempback[i] - lastxback
-                        if xtemp[i] < 0:
-                            xtemp[i] = 0
-                        if xtempback[i] < 0:
-                            xtempback[i] = 0
-                            
-                    for i in range(len(ytemp)):                      
-                        ytemp[i] = ytemp[i] - lasty
-                        ytempback[i] = ytempback[i] - lastyback
-                        if ytemp[i] < 0:
-                            ytemp[i] = 0
-                        if ytempback[i] < 0:
-                            ytempback[i] = 0
-
+                for indent in test.samples[samplename].sets[setname].indents.values():
+                    if indent.name in filenames:
+                        xtemp = indent.piezo[500:2500]
+                        ytemp = indent.load[500:2500]
+                        xtempback = indent.piezo[3500:5500][::-1]
+                        ytempback = indent.load[3500:5500][::-1]
+                        for i, loadvalue in enumerate(ytemp):
+                            if loadvalue < value/150:
+                                lasti = xtemp [i]
+                                lasty = ytemp[i]
+                                xtemp[i] = 0
+                                ytemp[i] = 0
                         
-                                        
-                    info.append(go.Scatter(x=xtemp, y=ytemp, showlegend=False, line=sample.color))
-                    info.append(go.Scatter(x=xtempback, y=ytempback, showlegend=False, line=sample.color))
-    '''
+                        for i, loadvalue in enumerate(ytempback):
+                            if loadvalue < value/150:
+                                lastxback = xtempback[i]
+                                lastyback = ytempback[i]
+                                xtempback[i] = 0
+                                ytempback[i] = 0
+                        
+                        
+                        for i in range(len(xtemp)):
+                            xtemp[i] = xtemp[i] - lasti
+                            xtempback[i] = xtempback[i] - lastxback
+                            if xtemp[i] < 0:
+                                xtemp[i] = 0
+                            if xtempback[i] < 0:
+                                xtempback[i] = 0
+                        
+                                
+                        for i in range(len(ytemp)):                      
+                            ytemp[i] = ytemp[i] - lasty
+                            ytempback[i] = ytempback[i] - lastyback
+                            if ytemp[i] < 0:
+                                ytemp[i] = 0
+                            if ytempback[i] < 0:
+                                ytempback[i] = 0
+
+                    
+                        if 'forward' in segment:
+                            info.append(go.Scatter(x=xtemp, y=ytemp, showlegend=False, line=test.availablecolors[n]))
+                        if 'backward' in segment:
+                            info.append(go.Scatter(x=xtempback, y=ytempback, showlegend=False, line=test.availablecolors[n]))
+                        n += 1
+                    
+      
+
     fig = go.Figure(data=info)
     fig.update_layout(
         title="Indentation Comparison",
@@ -414,10 +377,14 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
                 
                 test.assignname(name.split('.')[0])
                 out = ConvertOptics()
+                x = 0
                 for name in zip_obj.namelist():
+                    x+= 1
+                    print(x)
                     if name.split('.')[-1] == 'txt':
                         if name.split('/')[0] != '__MACOSX' and name.split('/')[2] != '' and name.split('/')[2] != '.DS_Store':
                             #do same thing but with objects and 2 lists
+                            print(name.split('/')[1])
                             if name.split('/')[1] not in test.samples.keys():
                                 test.addsample(name.split('/')[1])
                             
@@ -506,10 +473,10 @@ def tes(val, value):
 
 @app.callback(
     Output('test2', 'value'),
-    [Input('select-experiment', 'n_clicks'), Input('button2', 'n_clicks')],
+    [Input('button2', 'n_clicks')],
     [State("test2", "options")]
 )
-def test2a(val, n_clicks, options):
+def test2a(n_clicks, options):
     if (n_clicks%2) == 0:
         all_or_none = []
     else:
@@ -527,10 +494,10 @@ def test2b(val, value):
 
 @app.callback(
     Output('test3', 'value'),
-    [Input('select-experiment', 'n_clicks'), Input('button3', 'n_clicks')],
+    [Input('button3', 'n_clicks')],
     [State("test3", "options")]
 )
-def test3a(val, n_clicks, options):
+def test3a(n_clicks, options):
     if (n_clicks%2) == 0:
         all_or_none = []
     else:
@@ -552,10 +519,10 @@ def test3b(val, value):
 
 @app.callback(
     Output('test4', 'value'),
-    [Input('select-experiment', 'n_clicks'), Input('button4', 'n_clicks')],
+    [Input('button4', 'n_clicks')],
     [State("test4", "options")]
 )
-def test4a(val, n_clicks, options):
+def test4a(n_clicks, options):
     if (n_clicks%2) == 0:
         all_or_none = []
     else:
