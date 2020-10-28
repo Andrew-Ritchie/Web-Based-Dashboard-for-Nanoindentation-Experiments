@@ -13,6 +13,7 @@ import dash_html_components as html
 import dash_table
 import plotly.graph_objs as go
 from zipfile import ZipFile
+import timeit
 
 import pandas as pd
 
@@ -25,7 +26,8 @@ from template import out
 #get data
 test = Experiment()
 
-
+import plotly.io as pio
+pio.renderers.default = 'iframe'
 
 
 
@@ -290,14 +292,14 @@ def return_comparsion(value, segment):
                             info.append(go.Scatter(x=xtemp, y=ytemp, showlegend=False, line=test.availablecolors[n]))
                         if 'backward' in segment:
                             info.append(go.Scatter(x=xtempback, y=ytempback, showlegend=False, line=test.availablecolors[n]))
-                        n += 1
+                n += 1
                     
       
 
     fig = go.Figure(data=info)
     fig.update_layout(
         title="Indentation Comparison",
-        xaxis_title='Indentation',
+        xaxis_title='Displacement',
         yaxis_title='Load',
         plot_bgcolor='#DDDDDD',
         paper_bgcolor='#DDDDDD',
@@ -397,6 +399,7 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
             
             print(test.samples)
             print(test.samples['Rubber'], test.samples['Rubber'].sets['Day2'].indents )
+            test.outputdata()
 
         else:
             children = [
@@ -576,6 +579,7 @@ def return_graph(value, segment, new):
     print(new, 'test here')  
     info = []
     n = 0
+
     if segment != []:
         for displaypaths in test.displaypaths:
             if displaypaths != []:
@@ -588,20 +592,51 @@ def return_graph(value, segment, new):
                 for indent in test.samples[samplename].sets[setname].indents.values():
                     if indent.name in filenames:
                         if 'forward' in segment:
-                            info.append(go.Scatter(x=indent.piezo[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]], y=indent.load[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]], name=indent.name, line=test.availablecolors[n], showlegend=False))
+                            info.append(go.Scatter(x=indent.piezo[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]][0::10], y=indent.load[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]][0::10], name=indent.name, line=test.availablecolors[n], showlegend=False))
+                            #fog.add_trace
+                            #info.append(indent.load[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]])
+                            #x = indent.piezo[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]]
+
                         if 'backward' in segment:
-                            info.append(go.Scatter(x=indent.piezo[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]], y=indent.load[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]], name=indent.name, showlegend=False, line=test.availablecolors[n]))
+                            info.append(go.Scatter(x=indent.piezo[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]][0::10], y=indent.load[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]][0::10], name=indent.name, showlegend=False, line=test.availablecolors[n]))
+                            
+
                 n+=1 
 
                 if value is not None:
-                    info.append(go.Scatter(x=list(range(0,10000)), y=np.full(10001, value/150), name='Threshold', showlegend=False))
+                    info.append(go.Scattergl(x=list(range(0,10000))[0::10], y=np.full(10001, value/150)[0::10], name='Threshold', showlegend=False, line = dict(color='#E44236')))
+                    
+        print('oi, oi')
+        #fig = px.line(x =info, y = list(range(0,2000)))
+        print('done :-)')
+    
+    #fig = go.Figure(data=info)
 
+    print('WE GOT HERE ******************')
+    '''
+    df = dict(x=[1,2,3,4,5],y=[1,2,3,4,5])
+    fig = px.line(df, x='x', y="y", title='Life expectancy in Canada')
+    N = 200
+    x = np.random.randn(N)
+    y = np.random.randn(N)
+    tic=timeit.default_timer()
+    info = []
+    for i in range(0,100):
+        df = dict(x=x,y=y)
+        fig2 = px.line(df, x='x', y="y", title='La', render_mode='webgl')
+        fig.add_trace(fig2.data[0])
+    '''
+    
     fig = go.Figure(data=info)
+    
+
     fig.update_layout(
         title="Experiment Overview",
         xaxis_title='Displacement',
         yaxis_title='Load',
         plot_bgcolor='#DDDDDD',
-        paper_bgcolor='#DDDDDD'
+        paper_bgcolor='#DDDDDD',
     )
+    #toc=timeit.default_timer()
+    #print('Data Points: ', N, '/ TIME: ', toc - tic)
     return fig

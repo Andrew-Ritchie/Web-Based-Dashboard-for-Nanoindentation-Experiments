@@ -15,7 +15,8 @@ class Experiment():
         self.data = {}
         self.displaypaths = [[],[],[],[]]
         self.flag = False
-        self.availablecolors = [dict(color="rgba(255,0,0,0.2)", width=1), dict(color='#C7980A'), dict(color='#F4651F'), dict(color='#82D8A7'), dict(color='#CC3A05'), dict(color='#575E76'), dict(color='#156943'), dict(color='#0BD055'), dict(color='#ACD338')]
+        #dict(color="rgba(255,0,0,0.2)", width=1)
+        self.availablecolors = [dict(color='#575E76', width=1), dict(color='#C7980A', width=1), dict(color='#F4651F', width=1), dict(color='#82D8A7', width=1), dict(color='#CC3A05', width=1), dict(color='#575E76', width=1), dict(color='#156943',width=1), dict(color='#0BD055',width=1), dict(color='#ACD338',width=1)]
 
     def addsample(self, name):
         #self.samples.append(Sample(name))
@@ -25,6 +26,20 @@ class Experiment():
 
     def assignname(self, name):
         self.name = name
+
+    def outputdata(self):
+        outexperiment = {self.name: {}}
+        
+        for sample in self.samples.values():
+            outexperiment[self.name][sample.name] = {}
+            for sets in sample.sets.values():
+                outexperiment[self.name][sample.name][sets.name] = {}
+                for indent in sets.indents.values():
+                    outexperiment[self.name][sample.name][sets.name][indent.name] = {'time':indent.time, 'load':indent.load, 'indentation': indent.indentation, 'cantilever': indent.cantilever, 'piezo': indent.piezo, 'auxiliary': indent.auxiliary}
+
+        with open('example','w') as f: 
+            json.dump(outexperiment, f, indent=4) 
+
 
 
             
