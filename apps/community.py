@@ -82,5 +82,5 @@ layout = html.Div([
     ], style= SIDEBAR_STYLE),
     
     
-    html.Div(id='mainfeed',children= [post], style=MAIN_STYLE),
+    html.Div(id='mainfeed',children= [], style=MAIN_STYLE),
 ])   

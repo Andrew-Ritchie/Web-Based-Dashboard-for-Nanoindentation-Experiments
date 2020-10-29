@@ -15,17 +15,37 @@ import subprocess
 
 #datalist = subprocess.getoutput("kaggle datasets list -s afm").split('\n')
 
-#This method requires names to have no spaces
-def get_datasets(name, key):
-    os.environ['KAGGLE_USERNAME'] = name
-    os.environ['KAGGLE_KEY'] = key
-    datalist = subprocess.getoutput("kaggle datasets list -s afm").split('\n')
-    available_datasets = []
-    for element in datalist[2:]:
-        available_datasets.append(' '.join(s for s in element.split(' ') if s).split(' '))
-    print(available_datasets)
 
 
+
+class KaggleAPI():
+
+    def __init__(self):
+        self.username = None
+        self.key = None
+        self.available_datasets = None
+
+    
+    #Assign the API details for current user and set up enviroment varibles
+    def assign_details(self, username, key):
+        self.username = username
+        self.key = key
+        os.environ['KAGGLE_USERNAME'] = username
+        os.environ['KAGGLE_KEY'] = key
+        #os.environ['KAGGLE_PROXY'] = "http://proxy.server:3128" -- this will be used if deploying on pythonanywhere
+        self.available_datasets = self.get_datasets()
+
+
+
+
+    #This method requires names to have no spaces
+    def get_datasets(self):
+        datalist = subprocess.getoutput("kaggle datasets list -s afm").split('\n')
+        available_datasets = []
+        for element in datalist[2:]:
+            available_datasets.append(' '.join(s for s in element.split(' ') if s).split(' '))
+        print(available_datasets, 'test')
+        return available_datasets
 
 
 

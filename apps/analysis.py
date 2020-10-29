@@ -9,7 +9,7 @@ from plotly.subplots import make_subplots
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State
 from app import app
-from apps.kaggle2 import get_datasets
+from apps.kaggle2 import KaggleAPI
 
 from apps.prepare import current
 
@@ -35,6 +35,7 @@ MAIN_STYLE = {
 opts = []
 #------------------------------------------------------------------------------------------------------------------------------------
 #Login section of sidebar
+datasets = KaggleAPI()
 
 login = html.Div([
     html.H2("Log In", style={'text-align': 'center'}),
@@ -48,18 +49,34 @@ login = html.Div([
 ], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
 
 @app.callback(
-    dash.dependencies.Output('availabledata', 'children'),
+    dash.dependencies.Output('availabledatasets', 'options'),
     [dash.dependencies.Input("loginbutton", "n_clicks"),
     dash.dependencies.Input("username", "value"),
-    dash.dependencies.Input("key", "value")]
+    dash.dependencies.Input("key", "value")],
 )
 def getdata(button, name, key):
-    if button != 0:
-        get_datasets(name, key)
-        return dcc.Checklist(
-                options=[{'label': 'New York City', 'value': 'NYC'}],
-                labelStyle={'display': 'block', 'margin':'0%'},
-            )  
+
+    if button != 0 and name is not None:
+        print('ahhh')
+        opts = []
+        datasets.assign_details(name, key)
+        
+        for element in datasets.available_datasets:
+            opts.append({'label': element[1], 'value': element[1]})
+
+        return opts
+    return []
+
+@app.callback(
+    dash.dependencies.Output('availbledata', 'children'),
+    [dash.dependencies.Input("availabledatasets", "value")]
+)
+def outputinfo(value):
+    print('we got here')
+    return html.H2("Available Experiments", style={'text-align': 'center'})
+
+
+
 
 #---------------------------------------------------------------------------------------------------------------------------------------
 
@@ -67,6 +84,12 @@ def getdata(button, name, key):
 availbledata = html.Div(children = [
     html.H2("Available Experiments", style={'text-align': 'center'}),
     html.Div(id = 'availabledata', children = [
+    
+    dcc.RadioItems(
+            id = 'availabledatasets',
+            options=[],
+            labelStyle={'display': 'block', 'margin':'0%'},
+        )  
 
     ])
     
@@ -77,17 +100,58 @@ availbledata = html.Div(children = [
 
 #---------------------------------------------------------------------------------------------------------------------------------------
 
+overview = html.Div([
+            html.H2("Overview"),
+            
+            
+        ], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'})
+
+
+filter1 = html.Div([
+            html.H2("Filter One"),
+            
+            
+        ], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'})
+
+
+accessfeatures = { 'overview':overview, 'filter1':filter1 }
+
+
+#---------------------------------------------------------------------------------------------------------------------------------------
+
+
 
 
 features = html.Div([
     html.H2("Features", style={'text-align': 'center'}),
+    dcc.Checklist(
+                id = 'selectedfeatures',
+                options=[{'label': 'Overview', 'value': 'overview'},
+                         {'label': 'Filter1', 'value': 'filter1'}],
+                labelStyle={'display': 'block', 'margin':'0%'},
+    ),
+    html.Br()
     
 
 
 ], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
 
+@app.callback(
+    dash.dependencies.Output('analysismainfeed', 'children'),
+    [dash.dependencies.Input("selectedfeatures", "value")]
+)
+def displayfeature(value):
+    output = []
+    if value is not None:
+        for item in value:
+            output.append(accessfeatures[item])
+    return output
 
 
+        
+
+
+      
 
 
 
@@ -100,9 +164,7 @@ layout = html.Div([
     ], style= SIDEBAR_STYLE),
 
 
-    html.Div(id='mainfeed',children=[
-        
-    ], style=MAIN_STYLE),
+    html.Div(id='analysismainfeed',children=[], style=MAIN_STYLE),
 ])
 
 
