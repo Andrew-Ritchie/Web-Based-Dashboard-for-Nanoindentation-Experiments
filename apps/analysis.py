@@ -61,19 +61,53 @@ def getdata(button, name, key):
         opts = []
         datasets.assign_details(name, key)
         
+        index = 0
         for element in datasets.available_datasets:
-            opts.append({'label': element[1], 'value': element[1]})
+            opts.append({'label': element[1], 'value': index})
+            index += 1
 
         return opts
     return []
 
 @app.callback(
-    dash.dependencies.Output('availbledata', 'children'),
+    dash.dependencies.Output('info', 'children'),
     [dash.dependencies.Input("availabledatasets", "value")]
 )
 def outputinfo(value):
     print('we got here')
-    return html.H2("Available Experiments", style={'text-align': 'center'})
+    if value is not None:
+        return html.Div([
+
+            html.Div([
+                html.H4('Title: ' + datasets.available_datasets[value][1]),
+                html.H4('Size: ' + datasets.available_datasets[value][2]),
+                html.H4('Usability Rating:' + datasets.available_datasets[value][7]),
+
+            ], style={'padding-left':'10%', 'display': 'inline-block'}),
+
+            html.Div([
+                html.H4('Author: ' + datasets.available_datasets[value][0].split('/')[0]),
+                html.H4('Download Count: ' + datasets.available_datasets[value][5]),
+                html.H4('Vote Count: ' + datasets.available_datasets[value][6]),
+        
+            ], style = {'float':'right', 'margin-right':'10%'}),
+            
+            html.Div(id='line', style={ 'width': '80%', 'height': '47px', 'border-bottom': '1px solid black', 'position': 'relative', 'margin-left': '10%', 'margin-right':'10%'}),
+            html.H4('Last Updated', style={'padding-left':'20%', 'display': 'inline-block'}),
+            html.H4('Day: ' + datasets.available_datasets[value][3], style={'padding-left':'10%', 'display': 'inline-block'}),
+            html.H4('Time: ' + datasets.available_datasets[value][4], style={'padding-left':'10%', 'display': 'inline-block'}),
+        
+
+
+
+
+
+        ], style = {'text-indent':'0px', 'box-sizing':'border-box'})
+    else:
+        return html.Div(children = [
+            html.P('Please sign in and select an available dataset to utlise this feature.')
+        ], style = {'clear':'both', 'float':'left', 'text-indent':'0px'})
+        
 
 
 
@@ -94,7 +128,18 @@ availbledata = html.Div(children = [
     ])
     
 
-], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
+], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black'})
+
+
+
+
+#---------------------------------------------------------------------------------------------------------------------------------------
+
+workflow = html.Div(children = [
+    html.H2("Workflow", style={'text-align': 'center'}),
+    
+    
+], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black'})
 
 
 
@@ -102,7 +147,13 @@ availbledata = html.Div(children = [
 
 overview = html.Div([
             html.H2("Overview"),
-            
+            html.Div(id='info', style = {'margin':'0%', 'padding':'0%'}),
+
+            html.Br(),
+            html.H1(' '),
+
+
+
             
         ], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'})
 
@@ -159,7 +210,8 @@ layout = html.Div([
     html.Div([
         login,
         availbledata,
-        features
+        features,
+        workflow
 
     ], style= SIDEBAR_STYLE),
 
