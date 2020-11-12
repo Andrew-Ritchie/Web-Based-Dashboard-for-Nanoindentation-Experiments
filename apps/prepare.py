@@ -22,15 +22,29 @@ from apps.opticsparser import ConvertOptics
 from accessdata import *
 from experimenttree import experimenttree
 from template import out
+import uuid
 
 #get data
-test = Experiment()
+
+db = Data()
+
+
+
 
 import plotly.io as pio
 pio.renderers.default = 'iframe'
 
-
-
+@app.callback(
+    dash.dependencies.Output('sessionid', 'children'),
+    [dash.dependencies.Input("sessionid", "value")]
+)
+def update_forward_dro(click):
+    print('testing testing 123')
+    #return json.dumps(uuid.uuid4())
+    sesid = str(uuid.uuid4())
+    db.add_exp(sesid, Experiment())
+    return sesid
+    
 
 
 
@@ -60,11 +74,13 @@ sidebar = html.Div(
 
 
 uploadarea = html.Div([
+
     html.H2("Upload Experiment", style={'text-align': 'center'}),
     dcc.Input(id="expname", type="text", placeholder="Experiment name", debounce=True),
     dcc.Input(id="samname", type="text", placeholder="Sample name", debounce=True),
     dcc.Input(id="setname", type="text", placeholder="Set name", debounce=True),
     html.Div(id='output-data-upload'),
+    html.Div(id='sessionid', style={'display': 'none'}),
     dcc.Upload(
         id='upload-data',
         children=html.Div([
@@ -173,10 +189,12 @@ layout = html.Div([
 @app.callback(
     dash.dependencies.Output('forward', 'options'),
     [dash.dependencies.Input("dataoverview", "n_clicks"),
-    dash.dependencies.Input("forward", "value")]
+    dash.dependencies.Input("forward", "value"),
+    dash.dependencies.Input("sessionid", "children")]
 )
-def update_forward_dropdown(click, selected):
+def update_forward_dropdown(click, selected, sesid):
     outputvalues = []
+    test = db.exps[sesid]
     if test.segments is not None:
         for value in range(1, len(test.segments)):
             name = u'Segment{}'.format(str(value))
@@ -192,10 +210,12 @@ def update_forward_dropdown(click, selected):
 @app.callback(
     dash.dependencies.Output('backward', 'options'),
     [dash.dependencies.Input("dataoverview", "n_clicks"),
-    dash.dependencies.Input("backward", "value")]
+    dash.dependencies.Input("backward", "value"),
+    dash.dependencies.Input('sessionid', 'children')]
 )
-def update_backward_dropdown(click, selected):
+def update_backward_dropdown(click, selected, sesid):
     outputvalues = []
+    test = db.exps[sesid]
     if test.segments is not None:
         for value in range(1, len(test.segments)):
             name = u'Segment{}'.format(str(value))
@@ -211,9 +231,11 @@ def update_backward_dropdown(click, selected):
 
 @app.callback(
     Output("current-exp", 'children'),
-    [Input("selectexperiment", "value")]
+    [Input("selectexperiment", "value"),
+    Input('sessionid', 'children')]
 )
-def exp(value):
+def exp(value, sesid):
+    test = db.exps[sesid]
     if value is not None:
         test.assignname(value)
         test.assignfilepath('apps/converted/' + test.name)
@@ -225,18 +247,22 @@ def exp(value):
 
 @app.callback(
     Output("select-experiment", 'children'),
-    [Input("dataoverview", "n_clicks")]
+    [Input("dataoverview", "n_clicks"),
+    Input('sessionid', 'children')]
 )
-def exp1(value):
+def exp1(value, sesid):
+    test = db.exps[sesid]
     if value !=0:
        return out(test) 
 
 @app.callback(
     Output("comparsiongraph", 'figure'),
     [Input('slider', 'value'),
-    Input('segmentselector', 'value')]
+    Input('segmentselector', 'value'),
+    Input('sessionid', 'children')]
 )
-def return_comparsion(value, segment):
+def return_comparsion(value, segment, sesid):
+    test = db.exps[sesid]
     print(segment)
     info = []
     n = 0
@@ -360,10 +386,12 @@ def update_output2(input2):
     return u'Experiment Name: {}'.format(input2)
 
 @app.callback(Output('output-data-upload', 'children'),
-              [Input('upload-data', 'contents')],
+              [Input('upload-data', 'contents'),
+              Input('sessionid', 'children')],
               State('upload-data', 'filename'),
                State('upload-data', 'last_modified'))
-def update_output(list_of_contents, list_of_names, list_of_dates):
+def update_output(list_of_contents, sesid, list_of_names, list_of_dates):
+    test = db.exps[sesid]
     if list_of_contents is not None:
         if list_of_names[0].split('.')[-1] == 'zip':
             
@@ -450,10 +478,13 @@ def displayfunction(displaypaths):
 
 @app.callback(
     Output('test1', 'value'),
-    [Input('button1', 'n_clicks')],
+    [Input('button1', 'n_clicks'),
+    Input('sessionid', 'children')],
     [State("test1", "options")]
 )
-def first(n_clicks, options):
+def first(n_clicks, sesid, options):
+    print('do we ever get here')
+    test = db.exps[sesid]
     if (n_clicks%2) == 0:
         all_or_none = []
     else:
@@ -463,9 +494,10 @@ def first(n_clicks, options):
 
 @app.callback(
     Output('test1', 'children'),
-    [Input('select-experiment', 'n_clicks'), Input('test1', 'value')]
+    [Input('select-experiment', 'n_clicks'), Input('test1', 'value'), Input('sessionid', 'children')]
 )
-def tes(val, value):
+def tes(val, value, sesid):
+    test = db.exps[sesid]
     #displayfunction(value)
     test.displaypaths[0] = value
     test.flag = True
@@ -476,10 +508,12 @@ def tes(val, value):
 
 @app.callback(
     Output('test2', 'value'),
-    [Input('button2', 'n_clicks')],
+    [Input('button2', 'n_clicks'),
+    Input('sessionid', 'children')],
     [State("test2", "options")]
 )
-def test2a(n_clicks, options):
+def test2a(n_clicks, sesid, options):
+    test = db.exps[sesid]
     if (n_clicks%2) == 0:
         all_or_none = []
     else:
@@ -489,18 +523,21 @@ def test2a(n_clicks, options):
 
 @app.callback(
     Output('test2', 'children'),
-    [Input('select-experiment', 'n_clicks'), Input('test2', 'value')]
+    [Input('select-experiment', 'n_clicks'), Input('test2', 'value'), Input('sessionid', 'children')]
 )
-def test2b(val, value):
+def test2b(val, value, sesid):
+    test = db.exps[sesid]
     test.displaypaths[1] = value
     print('value from template First', value)
 
 @app.callback(
     Output('test3', 'value'),
-    [Input('button3', 'n_clicks')],
+    [Input('button3', 'n_clicks'),
+    Input('sessionid', 'children')],
     [State("test3", "options")]
 )
-def test3a(n_clicks, options):
+def test3a(n_clicks, sesid, options):
+    test = db.exps[sesid]
     if (n_clicks%2) == 0:
         all_or_none = []
     else:
@@ -510,9 +547,10 @@ def test3a(n_clicks, options):
 
 @app.callback(
     Output('test3', 'children'),
-    [Input('select-experiment', 'n_clicks'), Input('test3', 'value')]
+    [Input('select-experiment', 'n_clicks'), Input('test3', 'value'), Input('sessionid', 'children')]
 )
-def test3b(val, value):
+def test3b(val, value, sesid):
+    test = db.exps[sesid]
     print('value from template First', value)
     test.displaypaths[2] = value
 
@@ -522,10 +560,12 @@ def test3b(val, value):
 
 @app.callback(
     Output('test4', 'value'),
-    [Input('button4', 'n_clicks')],
+    [Input('button4', 'n_clicks'),
+    Input('sessionid', 'children')],
     [State("test4", "options")]
 )
-def test4a(n_clicks, options):
+def test4a(n_clicks, sesid, options):
+    test = db.exps[sesid]
     if (n_clicks%2) == 0:
         all_or_none = []
     else:
@@ -535,9 +575,10 @@ def test4a(n_clicks, options):
 
 @app.callback(
     Output('test4', 'children'),
-    [Input('select-experiment', 'n_clicks'), Input('test4', 'value')]
+    [Input('select-experiment', 'n_clicks'), Input('test4', 'value'), Input('sessionid', 'children')]
 )
-def test4b(val, value):
+def test4b(val, value, sesid):
+    test = db.exps[sesid]
     print('value from template First', value)
     test.displaypaths[3] = value
 
@@ -573,9 +614,12 @@ prev = None
     Output("overviewgraph", 'figure'),
     [Input("slider", 'value'),
     Input('segmentselector', 'value'),
-    Input('select-experiment', 'n_clicks')]
+    Input('select-experiment', 'n_clicks'),
+    Input('sessionid', 'children')]
 )
-def return_graph(value, segment, new):
+def return_graph(value, segment, new, sesid):
+    print('this is sesid', sesid)
+    test = db.exps[sesid]
     print(new, 'test here')  
     info = []
     n = 0

@@ -3,7 +3,16 @@ import os
 from apps.opticsparser import ConvertOptics
 
 converter = ConvertOptics()
- 
+
+class Data():
+    def __init__(self):
+        self.exps = {}
+    
+    def add_exp(self,id, exp):
+        self.exps[id] = exp
+
+
+
 class Experiment():
     def __init__(self, filepath=None, name=None):
         self.filepath = filepath
@@ -37,7 +46,7 @@ class Experiment():
                 for indent in sets.indents.values():
                     outexperiment[self.name][sample.name][sets.name][indent.name] = {'time':indent.time, 'load':indent.load, 'indentation': indent.indentation, 'cantilever': indent.cantilever, 'piezo': indent.piezo, 'auxiliary': indent.auxiliary}
 
-        with open('example','w') as f: 
+        with open('example.json','w') as f: 
             json.dump(outexperiment, f, indent=4) 
 
 
