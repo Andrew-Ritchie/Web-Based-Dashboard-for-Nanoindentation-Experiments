@@ -13,6 +13,7 @@ from apps.kaggle2 import KaggleAPI
 from apps.kaggle2 import DataProcessor
 from dash.exceptions import PreventUpdate
 from apps.anlysisfunctions import ContactPoint
+from apps.anlysisfunctions import Filters
 
 
 from apps.prepare import current
@@ -42,6 +43,8 @@ opts = []
 datasets = KaggleAPI()
 process = DataProcessor()
 cpfunctions = ContactPoint()
+filters = Filters()
+
 
 
 login = html.Div([
@@ -269,13 +272,41 @@ overview = html.Div([
         ], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'})
 
 
-filter1 = html.Div([
-            html.H2("Filters"),
+filter1 = html.Div(id='savgol', children=[
+            html.H2("Savgol Filter"),
+            dcc.Store(id='savgoldata', storage_type='session'),
+            dcc.Input(id="savgolzwin", type="number", value=0)
 
             
             
         ], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'})
 
+
+
+@app.callback(
+    dash.dependencies.Output('savgoldata', 'data'),
+    [dash.dependencies.Input("slotorder", "value"),
+    dash.dependencies.Input("savgolzwin", "value"),
+    dash.dependencies.Input("currentusername", "value"),
+    dash.dependencies.Input("sample1", "value"),
+    dash.dependencies.Input("sample2", "value")],)
+def savgol(order, win, username, sample1, sample2):
+    raw_data = process.uploadrawdata(username)
+    selected_data = sample1 + sample2
+    data = {}
+    for datapath in selected_data:
+        expname = datapath.split('/')[0]
+        sample = datapath.split('/')[1]
+        sets = datapath.split('/')[2]
+        for indent in list(raw_data[expname][sample][sets].keys()):
+            force = filters.savgol(raw_data[expname][sample][sets][indent]['load'][500:2500], raw_data[expname][sample][sets][indent]['piezo'][500:2500] )
+            if datapath in data.keys():
+                data[datapath][indent] = force
+            else:
+                data[datapath] = {}
+    print(data)
+    return data
+    
 
 
 
@@ -303,7 +334,6 @@ inspect = html.Div([
 
 ], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'})
 
-
 @app.callback(
     dash.dependencies.Output('inspectgraph', 'figure'),
     [dash.dependencies.Input("selectedfeatures", "value"),
@@ -313,11 +343,36 @@ inspect = html.Div([
      dash.dependencies.Input("sample2", "value"),
      dash.dependencies.Input("athreshold", "value"),
      dash.dependencies.Input("fthreshold", "value"),
-     dash.dependencies.Input("deltax", "value")],
-    [dash.dependencies.State('rawdata', 'value')]
+     dash.dependencies.Input("deltax", "value"),
+     dash.dependencies.Input("selectedfeatures", "value"),
+    dash.dependencies.Input('savgoldata', 'data')],
+    [dash.dependencies.State("savgoldata", "data")]
 )
-def data(value, username, test, sample1, sample2, athreshold, fthreshold, deltax, data):
+def data(value, username, test, sample1, sample2, athreshold, fthreshold, deltax, order, testdata, filter1):
+    #print(data)
     print(deltax, 'delta')
+    print(order)
+    y = order.index('inspect')
+    raw_data = process.uploadrawdata(username)
+    info = []
+    availablecolors = [dict(color='#E44236', width=1), dict(color='#3498DB',width=1), dict(color='#2ecc72',width=1), dict(color='#E74292',width=1), dict(color='#575E76', width=1), dict(color='#C7980A', width=1), dict(color='#F4651F', width=1), dict(color='#82D8A7', width=1), dict(color='#CC3A05', width=1)]
+    index = 0
+
+    if y > 0:
+        outdata = vars()[order[y-1]]
+        print(outdata, 'this is outdata')
+    for element in outdata.keys():
+        expname = element.split('/')[0]
+        sample = element.split('/')[1]
+        sets = element.split('/')[2]
+        for indent in list(outdata[element].keys()):
+            info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'][500:2500], y=outdata[element][indent], line = availablecolors[index], name = indent, showlegend=False))
+            cp = cpfunctions.calculate(outdata[element][indent], raw_data[expname][sample][sets][indent]['piezo'][500:2500], athreshold, fthreshold, deltax)
+            info.append(go.Scattergl(mode='markers', x=[cp[0]], y=[cp[1]], showlegend=False, marker=dict(color='black', size=10)))
+        index += 1
+    '''
+    check the order and whatever filter is behind the component - take its data !
+    same applies for the filter themseleves
     raw_data = process.uploadrawdata(username)
     data = process.uploadrawdata(username)
     availablecolors = [dict(color='#E44236', width=1), dict(color='#3498DB',width=1), dict(color='#2ecc72',width=1), dict(color='#E74292',width=1), dict(color='#575E76', width=1), dict(color='#C7980A', width=1), dict(color='#F4651F', width=1), dict(color='#82D8A7', width=1), dict(color='#CC3A05', width=1)]
@@ -330,12 +385,13 @@ def data(value, username, test, sample1, sample2, athreshold, fthreshold, deltax
         sample = datapath.split('/')[1]
         sets = datapath.split('/')[2]
         for indent in list(raw_data[expname][sample][sets].keys()):
-            info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'][500:2500][0::10], y=raw_data[expname][sample][sets][indent]['load'][500:2500][0::10], line = availablecolors[index], name = indent, showlegend=False))
+            force = filters.savgol(raw_data[expname][sample][sets][indent]['load'][500:2500], raw_data[expname][sample][sets][indent]['piezo'][500:2500] )
+            info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'][500:2500], y=force, line = availablecolors[index], name = indent, showlegend=False))
             print(cpfunctions.calculate(raw_data[expname][sample][sets][indent]['load'][500:2500], raw_data[expname][sample][sets][indent]['piezo'][500:2500]))
             cp = cpfunctions.calculate(raw_data[expname][sample][sets][indent]['load'][500:2500], raw_data[expname][sample][sets][indent]['piezo'][500:2500], athreshold, fthreshold, deltax)
             info.append(go.Scattergl(mode='markers', x=[cp[0]], y=[cp[1]], showlegend=False, marker=dict(color='black', size=10)))
         index += 1
-
+    '''
 
     fig = go.Figure(data=info)
     
@@ -480,6 +536,7 @@ layout = html.Div([
 
     html.Div(id='analysismainfeed',children=[
         html.Div(id='slotorder', style={'display': 'none'}),
+        html.Div(id='filtereddata', style={'display': 'none'}),
 
         html.Div(id='slot1', children=[
         ]),
@@ -489,5 +546,4 @@ layout = html.Div([
         ])
     ], style=MAIN_STYLE),
 ])
-
 

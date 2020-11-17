@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.signal
 
 class ContactPoint:
     
@@ -29,3 +30,16 @@ class ContactPoint:
                 jcp = j
                 break
         return [x[jcp], y[jcp]]
+
+class Filters:
+
+    def savgol(self, force, displacement, zwin=30):
+        x = np.array(displacement)
+        y = np.array(force)
+        zstep = (max(displacement) - min(displacement)) / (len(displacement) - 1)
+        window_length = int(zwin/zstep)
+        if (window_length % 2) == 0:
+            window_length += 1 
+        polyorder = 1
+
+        return scipy.signal.savgol_filter(y, window_length, polyorder, deriv=0, delta=1.0, axis=- 1, mode='interp', cval=0.0)
