@@ -26,10 +26,11 @@ class KaggleAPI():
         self.key = None
         self.available_datasets = None
     
-    #Assign the API details for current user and set up enviroment varibles
+    #Assign the API details for current user and set up enviroment varibles 
     def assign_details(self, username, key):
         self.username = username
         self.key = key
+        
         os.environ['KAGGLE_USERNAME'] = username
         os.environ['KAGGLE_KEY'] = key
         #os.environ['KAGGLE_PROXY'] = "http://proxy.server:3128" -- this will be used if deploying on pythonanywhere
