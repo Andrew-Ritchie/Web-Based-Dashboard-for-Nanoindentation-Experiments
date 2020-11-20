@@ -8,13 +8,17 @@ import os
 from plotly.subplots import make_subplots
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State
-from app import app
+from app import app, cache
 from apps.kaggle2 import KaggleAPI
 from apps.kaggle2 import DataProcessor
 from dash.exceptions import PreventUpdate
 from apps.anlysisfunctions import ContactPoint
 from apps.anlysisfunctions import Filters
+from apps.anlysisfunctions import YoungsModulus
 
+import numpy as np
+import scipy.signal
+from scipy.optimize import curve_fit
 
 from apps.prepare import current
 
@@ -35,7 +39,9 @@ MAIN_STYLE = {
   'float': 'left',
   'background-color': '#AFAFAF',
   'marign': '20%',
-  'padding-bottom': '100%'
+  'padding-bottom': '100%',
+  "maxHeight": "400px", 
+  "overflow": "scroll"
 }
 opts = []
 #------------------------------------------------------------------------------------------------------------------------------------
@@ -272,6 +278,76 @@ overview = html.Div([
         ], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'})
 
 
+indentation = html.Div(id='indentationdiv', children=[
+            html.H2("Calculated Indentation"),
+            dcc.Graph(id='calindentation',
+                  style={'float':'left', 'width':'65%', 'padding':'1%', 'bgcolor': 'black'}, 
+                  config={'displayModeBar':False},
+                  ),
+            
+            html.Div([
+                html.Br(),
+                html.H1(' '),
+            ])
+            
+            
+        ], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'})
+
+@app.callback(
+    dash.dependencies.Output('calindentation', 'figure'),
+    [dash.dependencies.Input("selectedfeatures", "value"),
+     dash.dependencies.Input("currentusername", "value")],
+    [dash.dependencies.State("cpindexes", "data"),
+     dash.dependencies.State("savgoldata", "data")]
+)
+def indentationoutput(value, username, cpindexes, data):
+    print(data.keys(), 'this is data keys')
+    print(cpindexes, 'this is indexes')
+    raw_data = process.uploadrawdata(username)
+    info = []
+    index = 0
+    availablecolors = [dict(color='#E44236', width=1), dict(color='#3498DB',width=1), dict(color='#2ecc72',width=1), dict(color='#E74292',width=1), dict(color='#575E76', width=1), dict(color='#C7980A', width=1), dict(color='#F4651F', width=1), dict(color='#82D8A7', width=1), dict(color='#CC3A05', width=1)]
+    #R is the tip radius
+    R = 10.0
+    def Hertz(x, E):
+                x = np.abs(x)
+                poisson = 0.5
+                # Eeff = E*1.0e9 #to convert E in GPa to keep consistency with the units nm and nN
+                return (4.0 / 3.0) * (E / (1 - poisson ** 2)) * np.sqrt(R * x ** 3)
+
+    fit_indentation_value = 1500.0
+    indmax = float(fit_indentation_value)
+    
+    for element in data.keys():
+        expname = element.split('/')[0]
+        sample = element.split('/')[1]
+        sets = element.split('/')[2]
+        for indent in list(data[element].keys()):
+            indentation_array = YM.calculate_indentation(data[element][indent], raw_data[expname][sample][sets][indent]['piezo'][500:2500], cpindexes[element][indent])                
+            print(len(indentation_array), len(data[element][indent]), 'TESTING THIS')
+            info.append(go.Scattergl(x=indentation_array, y=data[element][indent][cpindexes[element][indent]:], line = availablecolors[index], name = indent, showlegend=False))
+            print(data[element][indent][-2:]) 
+            contactforce = np.array(data[element][indent][cpindexes[element][indent]:])
+            ind = np.array(indentation_array)
+            jj = np.argmin((ind-indmax)**2)
+            popt, pcov = curve_fit(Hertz, ind[:jj], contactforce[:jj], p0=[1000.0 / 1e9], maxfev=100000)
+            info.append(go.Scattergl(x=indentation_array[:jj], y=Hertz(indentation_array[:jj], *popt), line = dict(color='#01CBC6', width=1), name = indent, showlegend=False))
+
+        index += 1
+    
+    fig = go.Figure(data=info)
+    
+    fig.update_layout(
+        title="Indentation",
+        xaxis_title='EM',
+        plot_bgcolor='#DDDDDD',
+        paper_bgcolor='#DDDDDD',
+        clickmode='event+select'
+    )
+    return fig
+
+
+
 filter1 = html.Div(id='savgol', children=[
             html.H2("Savgol Filter"),
             dcc.Store(id='savgoldata', storage_type='session'),
@@ -307,23 +383,80 @@ def savgol(order, win, username, sample1, sample2):
     print(data)
     return data
     
+elasticmod = html.Div(id='elasticmod', children=[
+            html.H2("Elastic Modulus"),
+            dcc.Input(id="savgolzwin", type="number", value=0),
+            dcc.Graph(id='elasticmodgraph',
+                  style={'float':'left', 'width':'65%', 'padding':'1%', 'bgcolor': 'black'}, 
+                  config={'displayModeBar':False},
+                  ),
+            html.Div([
+                html.Br()
+            ])
+            
+            
+        ], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'})
 
+YM = YoungsModulus()
 
+@app.callback(
+    dash.dependencies.Output('elasticmodgraph', 'figure'),
+    [dash.dependencies.Input("selectedfeatures", "value"),
+     dash.dependencies.Input("currentusername", "value")],
+    [dash.dependencies.State("cpindexes", "data"),
+     dash.dependencies.State("savgoldata", "data")]
+)
+def youngs(value, username, cpindexes, data):
+    print(data.keys(), 'this is data keys')
+    print(cpindexes, 'this is indexes')
+    raw_data = process.uploadrawdata(username)
+    info = []
+    x = []
+    numberofindents = 0
+
+    for element in data.keys():
+        expname = element.split('/')[0]
+        sample = element.split('/')[1]
+        sets = element.split('/')[2]
+        for indent in list(data[element].keys()):
+            indentation_array = YM.calculate_indentation(data[element][indent], raw_data[expname][sample][sets][indent]['piezo'][500:2500], cpindexes[element][indent])
+            elasticity = YM.fitHertz(indentation_array, data[element][indent], cpindexes[element][indent], tipradius=10e-6, fit_indentation_value=800)
+            x.append(elasticity)
+            print(elasticity, 'elasticity')
+            numberofindents += 1
+    if (numberofindents % 2) == 1:
+        numberofindents += 1
+    
+    info.append(go.Histogram(x=x, nbinsx=int(numberofindents/2)))
+    
+    fig = go.Figure(data=info)
+    
+    fig.update_layout(
+        title="Elastic Modulus Histogram",
+        xaxis_title='EM',
+        plot_bgcolor='#DDDDDD',
+        paper_bgcolor='#DDDDDD',
+        clickmode='event+select'
+    )
+    return fig
 
 
 inspect = html.Div([
     html.Div(id='inspect', children=[
+        dcc.Store(id='savgoldata', storage_type='session'),
+
+        dcc.Store(id='cpindexes', storage_type='session'),
         dcc.Graph(id='inspectgraph',
                   style={'float':'left', 'width':'65%', 'padding':'1%', 'bgcolor': 'black'}, 
                   config={'displayModeBar':False},
                   ),
         html.Div(children=[
             html.H4('Athreshold', style={'text-indent':'0'}),
-            dcc.Input(id="athreshold", type="number", value=0),
+            dcc.Input(id="athreshold", type="number", value=0.1),
             html.H4('Fthreshold', style={'text-indent':'0'}),
-            dcc.Input(id="fthreshold", type="number", value=0),
+            dcc.Input(id="fthreshold", type="number", value=10.0),
             html.H4('Deltax', style={'text-indent':'0'}),
-            dcc.Input(id="deltax", type="number", value=2000),
+            dcc.Input(id="deltax", type="number", value=2000.0),
 
         ], style = {'float':'left', 'padding-top':'10%'}),
         
@@ -335,7 +468,8 @@ inspect = html.Div([
 ], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'})
 
 @app.callback(
-    dash.dependencies.Output('inspectgraph', 'figure'),
+    [dash.dependencies.Output('inspectgraph', 'figure'),
+     dash.dependencies.Output("cpindexes", "data")],
     [dash.dependencies.Input("selectedfeatures", "value"),
      dash.dependencies.Input("currentusername", "value"),
      dash.dependencies.Input("inspectgraph", "value"),
@@ -344,11 +478,10 @@ inspect = html.Div([
      dash.dependencies.Input("athreshold", "value"),
      dash.dependencies.Input("fthreshold", "value"),
      dash.dependencies.Input("deltax", "value"),
-     dash.dependencies.Input("selectedfeatures", "value"),
-    dash.dependencies.Input('savgoldata', 'data')],
+     dash.dependencies.Input("selectedfeatures", "value")],
     [dash.dependencies.State("savgoldata", "data")]
 )
-def data(value, username, test, sample1, sample2, athreshold, fthreshold, deltax, order, testdata, filter1):
+def data(value, username, test, sample1, sample2, athreshold, fthreshold, deltax, order, filter1):
     #print(data)
     print(deltax, 'delta')
     print(order)
@@ -357,41 +490,39 @@ def data(value, username, test, sample1, sample2, athreshold, fthreshold, deltax
     info = []
     availablecolors = [dict(color='#E44236', width=1), dict(color='#3498DB',width=1), dict(color='#2ecc72',width=1), dict(color='#E74292',width=1), dict(color='#575E76', width=1), dict(color='#C7980A', width=1), dict(color='#F4651F', width=1), dict(color='#82D8A7', width=1), dict(color='#CC3A05', width=1)]
     index = 0
-
+    cpindexes = {}
     if y > 0:
         outdata = vars()[order[y-1]]
-        print(outdata, 'this is outdata')
-    for element in outdata.keys():
-        expname = element.split('/')[0]
-        sample = element.split('/')[1]
-        sets = element.split('/')[2]
-        for indent in list(outdata[element].keys()):
-            info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'][500:2500], y=outdata[element][indent], line = availablecolors[index], name = indent, showlegend=False))
-            cp = cpfunctions.calculate(outdata[element][indent], raw_data[expname][sample][sets][indent]['piezo'][500:2500], athreshold, fthreshold, deltax)
-            info.append(go.Scattergl(mode='markers', x=[cp[0]], y=[cp[1]], showlegend=False, marker=dict(color='black', size=10)))
-        index += 1
-    '''
-    check the order and whatever filter is behind the component - take its data !
-    same applies for the filter themseleves
-    raw_data = process.uploadrawdata(username)
-    data = process.uploadrawdata(username)
-    availablecolors = [dict(color='#E44236', width=1), dict(color='#3498DB',width=1), dict(color='#2ecc72',width=1), dict(color='#E74292',width=1), dict(color='#575E76', width=1), dict(color='#C7980A', width=1), dict(color='#F4651F', width=1), dict(color='#82D8A7', width=1), dict(color='#CC3A05', width=1)]
-    index = 0
-    info = []
+        #print(outdata, 'this is outdata')
+        for element in outdata.keys():
+            expname = element.split('/')[0]
+            sample = element.split('/')[1]
+            sets = element.split('/')[2]
+            cpindexes[element] = {}
+            for indent in list(outdata[element].keys()):
+                info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'][500:2500], y=outdata[element][indent], line = availablecolors[index], name = indent, showlegend=False))
+                cp = cpfunctions.calculate(outdata[element][indent], raw_data[expname][sample][sets][indent]['piezo'][500:2500], athreshold, fthreshold, deltax)
+                info.append(go.Scattergl(mode='markers', x=[cp[0]], y=[cp[1]], showlegend=False, marker=dict(color='black', size=10)))
+                cpindexes[element][indent] = cp[2]
+            index += 1
+    else:
+        raw_data = process.uploadrawdata(username)
+        data = process.uploadrawdata(username)
+        availablecolors = [dict(color='#E44236', width=1), dict(color='#3498DB',width=1), dict(color='#2ecc72',width=1), dict(color='#E74292',width=1), dict(color='#575E76', width=1), dict(color='#C7980A', width=1), dict(color='#F4651F', width=1), dict(color='#82D8A7', width=1), dict(color='#CC3A05', width=1)]
+        index = 0
+        info = []
 
-    selected_data = sample1 + sample2
-    for datapath in selected_data:
-        expname = datapath.split('/')[0]
-        sample = datapath.split('/')[1]
-        sets = datapath.split('/')[2]
-        for indent in list(raw_data[expname][sample][sets].keys()):
-            force = filters.savgol(raw_data[expname][sample][sets][indent]['load'][500:2500], raw_data[expname][sample][sets][indent]['piezo'][500:2500] )
-            info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'][500:2500], y=force, line = availablecolors[index], name = indent, showlegend=False))
-            print(cpfunctions.calculate(raw_data[expname][sample][sets][indent]['load'][500:2500], raw_data[expname][sample][sets][indent]['piezo'][500:2500]))
-            cp = cpfunctions.calculate(raw_data[expname][sample][sets][indent]['load'][500:2500], raw_data[expname][sample][sets][indent]['piezo'][500:2500], athreshold, fthreshold, deltax)
-            info.append(go.Scattergl(mode='markers', x=[cp[0]], y=[cp[1]], showlegend=False, marker=dict(color='black', size=10)))
-        index += 1
-    '''
+        selected_data = sample1 + sample2
+        for datapath in selected_data:
+            expname = datapath.split('/')[0]
+            sample = datapath.split('/')[1]
+            sets = datapath.split('/')[2]
+            for indent in list(raw_data[expname][sample][sets].keys()):                
+                info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'][500:2500], y=raw_data[expname][sample][sets][indent]['load'][500:2500], line = availablecolors[index], name = indent, showlegend=False))
+                cp = cpfunctions.calculate(raw_data[expname][sample][sets][indent]['load'][500:2500], raw_data[expname][sample][sets][indent]['piezo'][500:2500], athreshold, fthreshold, deltax)
+                info.append(go.Scattergl(mode='markers', x=[cp[0]], y=[cp[1]], showlegend=False, marker=dict(color='black', size=10)))
+            index += 1
+    
 
     fig = go.Figure(data=info)
     
@@ -403,14 +534,14 @@ def data(value, username, test, sample1, sample2, athreshold, fthreshold, deltax
         paper_bgcolor='#DDDDDD',
         clickmode='event+select'
     )
-    
-    return fig
+    print(cpindexes)
+    return fig, cpindexes
 
-    
+
         
 
 
-accessfeatures = { 'overview':overview, 'filter1':filter1, 'inspect':inspect }
+accessfeatures = { 'overview':overview, 'filter1':filter1, 'inspect':inspect, 'elasticmod': elasticmod, 'indentation':indentation }
 
 
 #---------------------------------------------------------------------------------------------------------------------------------------
@@ -426,7 +557,9 @@ features = html.Div([
                 id = 'selectedfeatures',
                 options=[{'label': 'Overview', 'value': 'overview'},
                          {'label': 'Filter1', 'value': 'filter1'},
-                         {'label': 'inspect', 'value': 'inspect'}],
+                         {'label': 'inspect', 'value': 'inspect'},
+                         {'label': 'elasticmod', 'value': 'elasticmod'},
+                        {'label': 'indentation', 'value': 'indentation'}],
                 labelStyle={'display': 'block', 'margin':'0%'},
     ),
     html.Br()
