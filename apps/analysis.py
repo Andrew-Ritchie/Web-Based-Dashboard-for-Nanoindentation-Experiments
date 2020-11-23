@@ -304,11 +304,13 @@ def indentationoutput(value, username, cpindexes, data):
     print(data.keys(), 'this is data keys')
     print(cpindexes, 'this is indexes')
     raw_data = process.uploadrawdata(username)
+    cantileverk = raw_data['metadata']['cantileverk']
+    tipradius = raw_data['metadata']['tipradius']
     info = []
     index = 0
     availablecolors = [dict(color='#E44236', width=1), dict(color='#3498DB',width=1), dict(color='#2ecc72',width=1), dict(color='#E74292',width=1), dict(color='#575E76', width=1), dict(color='#C7980A', width=1), dict(color='#F4651F', width=1), dict(color='#82D8A7', width=1), dict(color='#CC3A05', width=1)]
     #R is the tip radius
-    R = 10.0
+    R = tipradius
     def Hertz(x, E):
                 x = np.abs(x)
                 poisson = 0.5
@@ -322,8 +324,8 @@ def indentationoutput(value, username, cpindexes, data):
         expname = element.split('/')[0]
         sample = element.split('/')[1]
         sets = element.split('/')[2]
-        for indent in list(data[element].keys()):
-            indentation_array = YM.calculate_indentation(data[element][indent], raw_data[expname][sample][sets][indent]['piezo'][500:2500], cpindexes[element][indent])                
+        for indent in list(cpindexes[element].keys()):
+            indentation_array = YM.calculate_indentation(data[element][indent], raw_data[expname][sample][sets][indent]['piezo'][500:2500], cpindexes[element][indent], cantileverk)                
             print(len(indentation_array), len(data[element][indent]), 'TESTING THIS')
             info.append(go.Scattergl(x=indentation_array, y=data[element][indent][cpindexes[element][indent]:], line = availablecolors[index], name = indent, showlegend=False))
             print(data[element][indent][-2:]) 
@@ -339,7 +341,8 @@ def indentationoutput(value, username, cpindexes, data):
     
     fig.update_layout(
         title="Indentation",
-        xaxis_title='EM',
+        xaxis_title='Indentation [nm]',
+        yaxis_title='Load [nN]',
         plot_bgcolor='#DDDDDD',
         paper_bgcolor='#DDDDDD',
         clickmode='event+select'
@@ -368,7 +371,8 @@ filter1 = html.Div(id='savgol', children=[
     dash.dependencies.Input("sample2", "value")],)
 def savgol(order, win, username, sample1, sample2):
     raw_data = process.uploadrawdata(username)
-    selected_data = sample1 + sample2
+    #selected_data = sample1 + sample2
+    selected_data = sample1
     data = {}
     for datapath in selected_data:
         expname = datapath.split('/')[0]
@@ -410,6 +414,8 @@ def youngs(value, username, cpindexes, data):
     print(data.keys(), 'this is data keys')
     print(cpindexes, 'this is indexes')
     raw_data = process.uploadrawdata(username)
+    cantileverk = raw_data['metadata']['cantileverk']
+    tipradius = raw_data['metadata']['tipradius']
     info = []
     x = []
     numberofindents = 0
@@ -418,9 +424,9 @@ def youngs(value, username, cpindexes, data):
         expname = element.split('/')[0]
         sample = element.split('/')[1]
         sets = element.split('/')[2]
-        for indent in list(data[element].keys()):
-            indentation_array = YM.calculate_indentation(data[element][indent], raw_data[expname][sample][sets][indent]['piezo'][500:2500], cpindexes[element][indent])
-            elasticity = YM.fitHertz(indentation_array, data[element][indent], cpindexes[element][indent], tipradius=10e-6, fit_indentation_value=800)
+        for indent in list(cpindexes[element].keys()):
+            indentation_array = YM.calculate_indentation(data[element][indent], raw_data[expname][sample][sets][indent]['piezo'][500:2500], cpindexes[element][indent], cantileverk)
+            elasticity = YM.fitHertz(indentation_array, data[element][indent], cpindexes[element][indent], tipradius, fit_indentation_value=300)
             x.append(elasticity)
             print(elasticity, 'elasticity')
             numberofindents += 1
@@ -433,7 +439,7 @@ def youngs(value, username, cpindexes, data):
     
     fig.update_layout(
         title="Elastic Modulus Histogram",
-        xaxis_title='EM',
+        xaxis_title='Youngs Modulus [Pa]',
         plot_bgcolor='#DDDDDD',
         paper_bgcolor='#DDDDDD',
         clickmode='event+select'
@@ -452,9 +458,9 @@ inspect = html.Div([
                   ),
         html.Div(children=[
             html.H4('Athreshold', style={'text-indent':'0'}),
-            dcc.Input(id="athreshold", type="number", value=0.1),
+            dcc.Input(id="athreshold", type="number", value=10),
             html.H4('Fthreshold', style={'text-indent':'0'}),
-            dcc.Input(id="fthreshold", type="number", value=10.0),
+            dcc.Input(id="fthreshold", type="number", value=100.0),
             html.H4('Deltax', style={'text-indent':'0'}),
             dcc.Input(id="deltax", type="number", value=2000.0),
 
@@ -502,8 +508,12 @@ def data(value, username, test, sample1, sample2, athreshold, fthreshold, deltax
             for indent in list(outdata[element].keys()):
                 info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'][500:2500], y=outdata[element][indent], line = availablecolors[index], name = indent, showlegend=False))
                 cp = cpfunctions.calculate(outdata[element][indent], raw_data[expname][sample][sets][indent]['piezo'][500:2500], athreshold, fthreshold, deltax)
-                info.append(go.Scattergl(mode='markers', x=[cp[0]], y=[cp[1]], showlegend=False, marker=dict(color='black', size=10)))
-                cpindexes[element][indent] = cp[2]
+                if cp is not None: 
+                    info.append(go.Scattergl(mode='markers', x=[cp[0]], y=[cp[1]], showlegend=False, marker=dict(color='black', size=10)))
+                    cpindexes[element][indent] = cp[2]
+                    print(cp[0], cp[1], 'indexes')
+                else:
+                    print(indent, 'FAILEEDD')
             index += 1
     else:
         raw_data = process.uploadrawdata(username)
@@ -528,8 +538,8 @@ def data(value, username, test, sample1, sample2, athreshold, fthreshold, deltax
     
     fig.update_layout(
         title="Experimental Overview: Threshold Contact Point",
-        xaxis_title='Displacement',
-        yaxis_title='Load',
+        xaxis_title='Displacement [nm]',
+        yaxis_title='Load [nN]',
         plot_bgcolor='#DDDDDD',
         paper_bgcolor='#DDDDDD',
         clickmode='event+select'
@@ -670,6 +680,9 @@ layout = html.Div([
     html.Div(id='analysismainfeed',children=[
         html.Div(id='slotorder', style={'display': 'none'}),
         html.Div(id='filtereddata', style={'display': 'none'}),
+        html.Div(id='sample2', style={'display': 'none'}),
+        html.Div(id='cantieverk', style={'display': 'none'}),
+        html.Div(id='tipradius', style={'display': 'none'}),
 
         html.Div(id='slot1', children=[
         ]),
@@ -679,4 +692,5 @@ layout = html.Div([
         ])
     ], style=MAIN_STYLE),
 ])
+
 

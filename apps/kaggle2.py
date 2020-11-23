@@ -30,13 +30,13 @@ class KaggleAPI():
     def assign_details(self, username, key):
         self.username = username
         self.key = key
-        
+
         os.environ['KAGGLE_USERNAME'] = username
         os.environ['KAGGLE_KEY'] = key
         #os.environ['KAGGLE_PROXY'] = "http://proxy.server:3128" -- this will be used if deploying on pythonanywhere
         self.available_datasets = self.get_datasets()
-        #print(subprocess.getoutput("kaggle datasets list -s nuclei-afm-finaltest"))
-        print(subprocess.getoutput("kaggle datasets list -m"))
+        print(subprocess.getoutput("kaggle datasets list -s AFM"))
+        #print(subprocess.getoutput("kaggle datasets list -m"))
 
 
 
@@ -59,11 +59,21 @@ class KaggleAPI():
         #once implementated use -q to make it quiet
         os.system("kaggle datasets download -p kaggledatasets/" + os.environ['KAGGLE_USERNAME'] + "/ --unzip " + dataset)
 
-    def upload_dataset(self, path):
-        #os.system("kaggle datasets init -p " + path)
+    def upload_dataset(self, path, title, slug, username):
+        os.system("kaggle datasets init -p " + path)
+        self.edit_metadata(path, title, slug, username)
         os.system("kaggle datasets create -u -p " + path)
-        #print(subprocess.getoutput("kaggle datasets list -m"))
-        #print(subprocess.getoutput("kaggle datasets list -s nuclei-afm-test2"))
+        #delete the folder your working in 
+        shutil.rmtree(path)
+
+    
+    def edit_metadata(self, path, title, slug, username):
+        with open(path + 'dataset-metadata.json') as json_file:
+            data = json.load(json_file)
+        data['title'] = 'AFM-' + title
+        data['id'] = username + '/' + 'AFM-' + slug
+        json.dump(data, open(path + 'dataset-metadata.json',"w"))
+
 
 
 

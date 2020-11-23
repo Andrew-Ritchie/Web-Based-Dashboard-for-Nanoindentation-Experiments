@@ -36,7 +36,7 @@ class Experiment():
     def assignname(self, name):
         self.name = name
 
-    def outputdata(self):
+    def outputdata(self, sessionid):
         outexperiment = {self.name: {}}
         
         for sample in self.samples.values():
@@ -44,9 +44,10 @@ class Experiment():
             for sets in sample.sets.values():
                 outexperiment[self.name][sample.name][sets.name] = {}
                 for indent in sets.indents.values():
+                    outexperiment['metadata'] = {'tipradius' : (indent.tipradius*1000), 'cantileverk':indent.cantileverk}
                     outexperiment[self.name][sample.name][sets.name][indent.name] = {'time':indent.time, 'load':indent.load, 'indentation': indent.indentation, 'cantilever': indent.cantilever, 'piezo': indent.piezo, 'auxiliary': indent.auxiliary}
-
-        with open('example.json','w') as f: 
+        os.mkdir(sessionid)
+        with open(sessionid + '/example.json','w') as f: 
             json.dump(outexperiment, f, indent=4) 
 
 

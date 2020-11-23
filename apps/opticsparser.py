@@ -35,6 +35,7 @@ class ConvertFormat:
     def assignfilename(self, filename):
         self.filename = filename
         self.data = {self.filename : {'header':{}, 'results':{} } }
+        print(filename)
         
     
     def assignsampname(self, sampname):
@@ -54,6 +55,7 @@ class ConvertOptics(ConvertFormat):
         
 
         #Assign variables
+        print(self.filename, 'filename')
         self.data[self.filename]['header'] = {
             'tipradius': self.extractvalue(head[11]),
             'calibrationfactor': self.extractvalue(head[12]),
@@ -73,7 +75,7 @@ class ConvertOptics(ConvertFormat):
             info = re.split(r"[~\\r\\n\\t]+", line)
             
             self.data[self.filename]['results']["Time"].append(float(info[0]))
-            self.data[self.filename]['results']["Load"].append(float(info[1]))
+            self.data[self.filename]['results']["Load"].append(float(info[1])*1000)
             self.data[self.filename]['results']["Indentation"].append(float(info[2]))
             self.data[self.filename]['results']["Cantilever"].append(float(info[3]))
             self.data[self.filename]['results']["Piezo"].append(float(info[4]))

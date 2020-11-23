@@ -23,10 +23,14 @@ from accessdata import *
 from experimenttree import experimenttree
 from template import out
 import uuid
+from dash.exceptions import PreventUpdate
+from apps.kaggle2 import KaggleAPI
+
 
 #get data
 
 db = Data()
+kaggle = KaggleAPI()
 
 
 
@@ -133,7 +137,7 @@ layout = html.Div([
     ], style= SIDEBAR_STYLE),
     
     
-    html.Div(id='mainfeed',children=[
+    html.Div(id='mainfeedprep',children=[
         html.Div([
             html.H2("Prepare Data"),
             #html.Div(id='current-exp', style={'text-indent': '1.5%'}),
@@ -169,15 +173,14 @@ layout = html.Div([
                 dcc.Graph(id='comparsiongraph',style={'float':'left', 'width': '30%', 'padding': '1%'}, config={'displayModeBar':False}),
             ],style={'padding':'0%'}),
             html.Button('Convert', id='submit-val', n_clicks=0, style={'float':'left', 'box-sizing':'border-box', 'margin-right':'2%'}),
-            html.Button('Convert', id='submit-val', n_clicks=0, style={'float':'right', 'box-sizing':'border-box', 'margin-right':'2%'}),
-            html.H1('test'),
-            html.Pre(id='click-data'),
-            html.P(id='one'),
-            html.P(id='two'),
-            dcc.Checklist(
-                options= [{'label': 'Forward', 'value': 'NYC'},
-                    {'label': 'Backward', 'value': 'MTL'},]
-            )
+            html.Button('Convert', id='submit-to-kaggle', n_clicks=0, style={'float':'right', 'box-sizing':'border-box', 'margin-right':'2%'}),
+            html.Div([
+                html.Pre(id='click-data'),
+                html.Br()
+
+            ]),
+            html.H1('-  '),
+            html.Br(),
 
             
         ], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'}),
@@ -185,6 +188,57 @@ layout = html.Div([
     ], style=MAIN_STYLE),
 ])
 
+submit = html.Div(id='kagglepush', children=[
+            html.H2("Upload Dataset"),
+            html.Div([
+                dcc.Input(id="kagglename", type="text", placeholder="Kaggle Username", debounce=True),
+                dcc.Input(id="kagglekey", type="text", placeholder="Kaggle Key", debounce=True),
+            ], style = {}),
+            html.Div([
+                dcc.Input(id="title", type="text", placeholder="Experiment name", debounce=True),
+                dcc.Input(id="slugid", type="text", placeholder="Experiment name", debounce=True)
+            ], style = {}),
+
+            html.Button('Upload', id='dbpush', n_clicks=0, style={'float':'right', 'box-sizing':'border-box', 'margin-right':'2%'}),
+
+            
+        ], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'})
+
+@app.callback(
+    dash.dependencies.Output('mainfeedprep', 'children'),
+    [dash.dependencies.Input("submit-to-kaggle", "n_clicks"),
+     dash.dependencies.Input('sessionid', 'children')]
+)
+def submitdataset(click, sesid):
+    if click != 0:
+
+        db.exps[sesid].outputdata(sesid)
+        return submit
+    else:
+        raise PreventUpdate
+
+@app.callback(
+    dash.dependencies.Output('kagglepush', 'children'),
+    [dash.dependencies.Input("dbpush", "n_clicks")],
+    [dash.dependencies.State("kagglename", "value"),
+     dash.dependencies.State("kagglekey", "value"),
+     dash.dependencies.State("title", "value"),
+     dash.dependencies.State("slugid", "value"),
+     dash.dependencies.State('sessionid', 'children')]
+)
+def submitdataset(click, username, key, title, slugid, sessionid):
+    if click != 0:
+        kaggle.assign_details(username, key)
+        kaggle.upload_dataset(sessionid + '/', title, slugid, username)
+
+
+        #+ os.listdir(sessionid + '/')[0]
+        return html.H1('you have submited this dataset to Kaggle')
+    else:
+        raise PreventUpdate
+
+
+        
 
 @app.callback(
     dash.dependencies.Output('forward', 'options'),
@@ -282,14 +336,14 @@ def return_comparsion(value, segment, sesid):
                         xtempback = indent.piezo[3500:5500][::-1]
                         ytempback = indent.load[3500:5500][::-1]
                         for i, loadvalue in enumerate(ytemp):
-                            if loadvalue < value/150:
+                            if loadvalue < (value*1000)/(150):
                                 lasti = xtemp [i]
                                 lasty = ytemp[i]
                                 xtemp[i] = 0
                                 ytemp[i] = 0
                         
                         for i, loadvalue in enumerate(ytempback):
-                            if loadvalue < value/150:
+                            if loadvalue < (value*1000)/(150):
                                 lastxback = xtempback[i]
                                 lastyback = ytempback[i]
                                 xtempback[i] = 0
@@ -325,8 +379,8 @@ def return_comparsion(value, segment, sesid):
     fig = go.Figure(data=info)
     fig.update_layout(
         title="Indentation Comparison",
-        xaxis_title='Displacement',
-        yaxis_title='Load',
+        xaxis_title='Displacement [nm]',
+        yaxis_title='Load [nN]',
         plot_bgcolor='#DDDDDD',
         paper_bgcolor='#DDDDDD',
         clickmode='event+select'
@@ -415,6 +469,7 @@ def update_output(list_of_contents, sesid, list_of_names, list_of_dates):
                         if name.split('/')[0] != '__MACOSX' and name.split('/')[2] != '' and name.split('/')[2] != '.DS_Store':
                             #do same thing but with objects and 2 lists
                             print(name.split('/')[1])
+                            print(name, 'full name')
                             if name.split('/')[1] not in test.samples.keys():
                                 test.addsample(name.split('/')[1])
                             
@@ -426,8 +481,8 @@ def update_output(list_of_contents, sesid, list_of_names, list_of_dates):
                                 test.segments = test.samples[name.split('/')[1]].sets[name.split('/')[2]].indents[name.split('/')[3]].segments
             
             print(test.samples)
-            print(test.samples['Rubber'], test.samples['Rubber'].sets['Day2'].indents )
-            test.outputdata()
+            #print(test.samples['Rubber'], test.samples['Rubber'].sets['Day2'].indents )
+            #test.outputdata()
 
         else:
             children = [
@@ -444,6 +499,7 @@ def parse_contents(contents, filename, date):
     print(decoded[0:110])
     current.assignfilename(filename)
     current.loaddata(decoded)
+    print(filename)
     current.loadheader(decoded)
     current.createfile()
 
@@ -676,8 +732,8 @@ def return_graph(value, segment, new, sesid):
 
     fig.update_layout(
         title="Experiment Overview",
-        xaxis_title='Displacement',
-        yaxis_title='Load',
+        xaxis_title='Displacement [nm]',
+        yaxis_title='Load [nN]',
         plot_bgcolor='#DDDDDD',
         paper_bgcolor='#DDDDDD',
     )

@@ -5,11 +5,13 @@ from scipy.optimize import curve_fit
 
 class ContactPoint:
     
-    def calculate(self, force, displacement, Athreshold=0.1, Fthreshold=10.0, deltax=2000.0):
+    def calculate(self, force, displacement, Athreshold=0.01, Fthreshold=10.0, deltax=2000.0):
         yth = Athreshold
         x = np.array(displacement)
         y = np.array(force)
         if yth > np.max(y) or yth < np.min(y): 
+            print('THIS HAPPNED')
+            print(np.max(y), np.min(y), yth)
             return None
         jrov = 0
         for j in range(len(y)-1,1,-1): 
@@ -37,7 +39,7 @@ class ContactPoint:
 
 class Filters:
 
-    def savgol(self, force, displacement, zwin=30):
+    def savgol(self, force, displacement, zwin=21):
         x = np.array(displacement)
         y = np.array(force)
         zstep = (max(displacement) - min(displacement)) / (len(displacement) - 1)
@@ -50,7 +52,7 @@ class Filters:
 
 class YoungsModulus:
 
-    def calculate_indentation(self, force, displacement, cpindex, k=0.51):
+    def calculate_indentation(self, force, displacement, cpindex, k=0.032):
         indentation = []
 
         for value in range(cpindex, len(force)):
@@ -58,7 +60,7 @@ class YoungsModulus:
         
         return indentation
     
-    def fitHertz(self, indentation, force, cpindex, tipradius=10.0, fit_indentation_value=800.0):
+    def fitHertz(self, indentation, force, cpindex, tipradius=8000, fit_indentation_value=300.0):
         '''
         if self.ind is None or self.touch is None or (len(self.ind) != len(self.touch)):
             return
