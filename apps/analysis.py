@@ -15,6 +15,8 @@ from dash.exceptions import PreventUpdate
 from apps.anlysisfunctions import ContactPoint
 from apps.anlysisfunctions import Filters
 from apps.anlysisfunctions import YoungsModulus
+import dash_table
+
 
 import numpy as np
 import scipy.signal
@@ -327,9 +329,13 @@ def indentationoutput(value, username, cpindexes, data):
         for indent in list(cpindexes[element].keys()):
             indentation_array = YM.calculate_indentation(data[element][indent], raw_data[expname][sample][sets][indent]['piezo'][500:2500], cpindexes[element][indent], cantileverk)                
             print(len(indentation_array), len(data[element][indent]), 'TESTING THIS')
-            info.append(go.Scattergl(x=indentation_array, y=data[element][indent][cpindexes[element][indent]:], line = availablecolors[index], name = indent, showlegend=False))
-            print(data[element][indent][-2:]) 
-            contactforce = np.array(data[element][indent][cpindexes[element][indent]:])
+            print(data[element][indent][-2:])
+            
+            contactforce = np.array(data[element][indent][cpindexes[element][indent]:]) - data[element][indent][cpindexes[element][indent]]
+            
+            
+            info.append(go.Scattergl(x=indentation_array, y=contactforce, line = availablecolors[index], name = indent, showlegend=False))
+
             ind = np.array(indentation_array)
             jj = np.argmin((ind-indmax)**2)
             popt, pcov = curve_fit(Hertz, ind[:jj], contactforce[:jj], p0=[1000.0 / 1e9], maxfev=100000)
@@ -372,7 +378,10 @@ filter1 = html.Div(id='savgol', children=[
 def savgol(order, win, username, sample1, sample2):
     raw_data = process.uploadrawdata(username)
     #selected_data = sample1 + sample2
-    selected_data = sample1
+    if sample2 is not None:
+        selected_data = sample1 + sample2
+    else:
+        selected_data = sample1
     data = {}
     for datapath in selected_data:
         expname = datapath.split('/')[0]
@@ -395,6 +404,24 @@ elasticmod = html.Div(id='elasticmod', children=[
                   config={'displayModeBar':False},
                   ),
             html.Div([
+                dash_table.DataTable(
+                id='table',
+                style_header={'backgroundColor': '#AFAFAF'},
+                style_cell={
+                    'textAlign': 'left',
+                    'backgroundColor': '#DDDDDD',
+                    'color': 'black'
+                },
+                style_cell_conditional=[
+                        {
+                            'if': {'column_id': 'Region'},
+                            'textAlign': 'left'
+                        }
+                ]
+                )
+            ], style={'float':'left', 'width':'65%', 'padding':'1%', 'bgcolor': 'black'}),
+            
+            html.Div([
                 html.Br()
             ])
             
@@ -404,7 +431,9 @@ elasticmod = html.Div(id='elasticmod', children=[
 YM = YoungsModulus()
 
 @app.callback(
-    dash.dependencies.Output('elasticmodgraph', 'figure'),
+    [dash.dependencies.Output('elasticmodgraph', 'figure'),
+     dash.dependencies.Output('table', 'columns'),
+     dash.dependencies.Output('table', 'data')],
     [dash.dependencies.Input("selectedfeatures", "value"),
      dash.dependencies.Input("currentusername", "value")],
     [dash.dependencies.State("cpindexes", "data"),
@@ -419,6 +448,7 @@ def youngs(value, username, cpindexes, data):
     info = []
     x = []
     numberofindents = 0
+    caldata = {}
 
     for element in data.keys():
         expname = element.split('/')[0]
@@ -427,6 +457,7 @@ def youngs(value, username, cpindexes, data):
         for indent in list(cpindexes[element].keys()):
             indentation_array = YM.calculate_indentation(data[element][indent], raw_data[expname][sample][sets][indent]['piezo'][500:2500], cpindexes[element][indent], cantileverk)
             elasticity = YM.fitHertz(indentation_array, data[element][indent], cpindexes[element][indent], tipradius, fit_indentation_value=300)
+            caldata[indent] = elasticity
             x.append(elasticity)
             print(elasticity, 'elasticity')
             numberofindents += 1
@@ -444,7 +475,12 @@ def youngs(value, username, cpindexes, data):
         paper_bgcolor='#DDDDDD',
         clickmode='event+select'
     )
-    return fig
+    cols = [{"name": 'filename', "id": 'filename'}, {"name": 'Youngs Modulus [Pa]', "id": 'ym'}]
+    out = []
+    for element in list(caldata.keys()):
+        out.append({'filename':element, 'ym':round(caldata[element], 3)})
+
+    return fig, cols, out
 
 
 inspect = html.Div([

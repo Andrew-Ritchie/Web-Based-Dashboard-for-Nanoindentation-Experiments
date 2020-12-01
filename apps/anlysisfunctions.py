@@ -65,7 +65,7 @@ class YoungsModulus:
         if self.ind is None or self.touch is None or (len(self.ind) != len(self.touch)):
             return
         '''
-        contactforce = np.array(force[cpindex:])
+        contactforce = np.array(force[cpindex:]) - force[cpindex]
         ind = np.array(indentation)
         seeds = [1000.0 / 1e9]
         try:

@@ -168,15 +168,16 @@ layout = html.Div([
            
            
             html.Div([
-                html.Div([dcc.Slider(id='slider',vertical=True)], style={'float':'left'}),
+                html.Div([dcc.Slider(id='slider',vertical=True, min = 0, max = 100)], style={'float':'left'}),
                 dcc.Graph(id='overviewgraph', style={'float':'left', 'width':'65%', 'padding':'1%', 'bgcolor': 'black'}, config={'displayModeBar':False}),
                 dcc.Graph(id='comparsiongraph',style={'float':'left', 'width': '30%', 'padding': '1%'}, config={'displayModeBar':False}),
             ],style={'padding':'0%'}),
             html.Button('Convert', id='submit-val', n_clicks=0, style={'float':'left', 'box-sizing':'border-box', 'margin-right':'2%'}),
             html.Button('Convert', id='submit-to-kaggle', n_clicks=0, style={'float':'right', 'box-sizing':'border-box', 'margin-right':'2%'}),
+            html.Br(),
             html.Div([
                 html.Pre(id='click-data'),
-                html.Br()
+                html.Br(),
 
             ]),
             html.H1('-  '),
@@ -200,6 +201,7 @@ submit = html.Div(id='kagglepush', children=[
             ], style = {}),
 
             html.Button('Upload', id='dbpush', n_clicks=0, style={'float':'right', 'box-sizing':'border-box', 'margin-right':'2%'}),
+            html.P('Please enter your experimental details, as well as Kaggle credentials.')
 
             
         ], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'})
@@ -233,7 +235,7 @@ def submitdataset(click, username, key, title, slugid, sessionid):
 
 
         #+ os.listdir(sessionid + '/')[0]
-        return html.H1('you have submited this dataset to Kaggle')
+        return html.P('You have submited this dataset to Kaggle')
     else:
         raise PreventUpdate
 
@@ -336,14 +338,16 @@ def return_comparsion(value, segment, sesid):
                         xtempback = indent.piezo[3500:5500][::-1]
                         ytempback = indent.load[3500:5500][::-1]
                         for i, loadvalue in enumerate(ytemp):
-                            if loadvalue < (value*1000)/(150):
+                            if loadvalue < value:
+                                #if loadvalue < (value*1000)/(150):
                                 lasti = xtemp [i]
                                 lasty = ytemp[i]
                                 xtemp[i] = 0
                                 ytemp[i] = 0
                         
                         for i, loadvalue in enumerate(ytempback):
-                            if loadvalue < (value*1000)/(150):
+                            if loadvalue < value:
+                                #if loadvalue < (value*1000)/(150):
                                 lastxback = xtempback[i]
                                 lastyback = ytempback[i]
                                 xtempback[i] = 0
@@ -378,7 +382,7 @@ def return_comparsion(value, segment, sesid):
 
     fig = go.Figure(data=info)
     fig.update_layout(
-        title="Indentation Comparison",
+        title="CP Displacement Comparison",
         xaxis_title='Displacement [nm]',
         yaxis_title='Load [nN]',
         plot_bgcolor='#DDDDDD',
@@ -667,7 +671,8 @@ def fouth(value):
 prev = None
 
 @app.callback(
-    Output("overviewgraph", 'figure'),
+    [Output("overviewgraph", 'figure'),
+     Output('slider', 'max')],
     [Input("slider", 'value'),
     Input('segmentselector', 'value'),
     Input('select-experiment', 'n_clicks'),
@@ -679,7 +684,7 @@ def return_graph(value, segment, new, sesid):
     print(new, 'test here')  
     info = []
     n = 0
-
+    top = 100
     if segment != []:
         for displaypaths in test.displaypaths:
             if displaypaths != []:
@@ -693,18 +698,20 @@ def return_graph(value, segment, new, sesid):
                     if indent.name in filenames:
                         if 'forward' in segment:
                             info.append(go.Scatter(x=indent.piezo[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]][0::10], y=indent.load[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]][0::10], name=indent.name, line=test.availablecolors[n], showlegend=False))
-                            #fog.add_trace
+                            top = max(indent.load[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]])
                             #info.append(indent.load[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]])
                             #x = indent.piezo[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]]
 
                         if 'backward' in segment:
+                            top = max(indent.load[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]])
                             info.append(go.Scatter(x=indent.piezo[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]][0::10], y=indent.load[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]][0::10], name=indent.name, showlegend=False, line=test.availablecolors[n]))
                             
 
                 n+=1 
 
                 if value is not None:
-                    info.append(go.Scattergl(x=list(range(0,10000))[0::10], y=np.full(10001, value/150)[0::10], name='Threshold', showlegend=False, line = dict(color='#E44236')))
+                    info.append(go.Scattergl(x=list(range(0,10000))[0::10], y=np.full(10001, value)[0::10], name='Threshold', showlegend=False, line = dict(color='#E44236')))
+                    #info.append(go.Scattergl(x=list(range(0,10000))[0::10], y=np.full(10001, value/150)[0::10], name='Threshold', showlegend=False, line = dict(color='#E44236')))
                     
         print('oi, oi')
         #fig = px.line(x =info, y = list(range(0,2000)))
@@ -739,4 +746,4 @@ def return_graph(value, segment, new, sesid):
     )
     #toc=timeit.default_timer()
     #print('Data Points: ', N, '/ TIME: ', toc - tic)
-    return fig
+    return fig, top
