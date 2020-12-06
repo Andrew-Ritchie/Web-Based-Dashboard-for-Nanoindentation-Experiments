@@ -1,21 +1,14 @@
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
-import dash_auth
 import dash
 from app import app
 
 
 from dash.dependencies import Input, Output, State
 
-VALID_USERNAME_PASSWORD_PAIRS = {
-    'hello': 'world'
-}
 
-auth = dash_auth.BasicAuth(
-    app,
-    VALID_USERNAME_PASSWORD_PAIRS
-)
+
 
 SIDEBAR_STYLE = {
     'box-sizing':'border-box',

@@ -19,12 +19,14 @@ import pandas as pd
 
 from app import app
 from apps.opticsparser import ConvertOptics
+from apps.opticsparser import ConvertRangeAFM
 from accessdata import *
-from experimenttree import experimenttree
 from template import out
 import uuid
 from dash.exceptions import PreventUpdate
 from apps.kaggle2 import KaggleAPI
+import shutil
+
 
 
 #get data
@@ -80,9 +82,21 @@ sidebar = html.Div(
 uploadarea = html.Div([
 
     html.H2("Upload Experiment", style={'text-align': 'center'}),
-    dcc.Input(id="expname", type="text", placeholder="Experiment name", debounce=True),
-    dcc.Input(id="samname", type="text", placeholder="Sample name", debounce=True),
-    dcc.Input(id="setname", type="text", placeholder="Set name", debounce=True),
+    html.Div([
+    dcc.RadioItems(
+    id='filetype',
+    options=[
+        {'label': 'Optics11', 'value': 'Optics11'},
+        {'label': 'JPK Instruments', 'value': 'JPK Instruments'},
+        {'label': 'AFM workshop', 'value': 'AFM workshop'},
+        {'label': 'afmformats', 'value': 'afmformats'},
+        {'label': 'Asylum Research', 'value': 'Asylum Research'},
+        {'label': 'NT-MDT Spectrum Instruments', 'value': 'NT-MDT Spectrum Instruments'},
+    ],
+    labelStyle={'display': 'block', 'margin':'0%'},
+    
+    )], style={'width': '100%', 'margin-left': '1%', 'padding':'0%', "maxHeight": "100px", "overflow": "scroll"}),
+
     html.Div(id='output-data-upload'),
     html.Div(id='sessionid', style={'display': 'none'}),
     dcc.Upload(
@@ -106,6 +120,8 @@ uploadarea = html.Div([
 
 ], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
 
+
+
 selectexperiment = html.Div([
     html.Button(html.H2('Data Overview'), id='dataoverview', n_clicks=0, style={'box-sizing':'border-box', 'align':'center'}),
     html.Div(id='select-experiment'),
@@ -128,6 +144,7 @@ selectfeature = html.Div([
 
 
 current = ConvertOptics() 
+multipleAFM = ConvertRangeAFM()
 
 layout = html.Div([
     html.Div([
@@ -169,6 +186,7 @@ layout = html.Div([
            
             html.Div([
                 html.Div([dcc.Slider(id='slider',vertical=True, min = 0, max = 100)], style={'float':'left'}),
+                html.Div(id='slidervalue', style={'display': 'none'}),
                 dcc.Graph(id='overviewgraph', style={'float':'left', 'width':'65%', 'padding':'1%', 'bgcolor': 'black'}, config={'displayModeBar':False}),
                 dcc.Graph(id='comparsiongraph',style={'float':'left', 'width': '30%', 'padding': '1%'}, config={'displayModeBar':False}),
             ],style={'padding':'0%'}),
@@ -249,6 +267,7 @@ def submitdataset(click, username, key, title, slugid, sessionid):
     dash.dependencies.Input("sessionid", "children")]
 )
 def update_forward_dropdown(click, selected, sesid):
+    '''
     outputvalues = []
     test = db.exps[sesid]
     if test.segments is not None:
@@ -262,7 +281,20 @@ def update_forward_dropdown(click, selected, sesid):
     else:
         outputvalues = [{'label': 'Upload Experiment', 'value': 'None'}]
     return outputvalues
-
+    '''
+    outputvalues = []
+    test = db.exps[sesid]
+    if test.segments is not None:
+        for value in range(0,test.segments):
+            name = u'Segment{}'.format(str(value))
+            outputvalues.append({'label': name, 'value': value})
+        if selected is not None:
+            if selected != 'None':
+                test.forwardseg = selected
+                print(test.forwardseg)
+    else:
+        outputvalues = [{'label': 'Upload Experiment', 'value': 'None'}]
+    return outputvalues
 @app.callback(
     dash.dependencies.Output('backward', 'options'),
     [dash.dependencies.Input("dataoverview", "n_clicks"),
@@ -270,6 +302,7 @@ def update_forward_dropdown(click, selected, sesid):
     dash.dependencies.Input('sessionid', 'children')]
 )
 def update_backward_dropdown(click, selected, sesid):
+    '''
     outputvalues = []
     test = db.exps[sesid]
     if test.segments is not None:
@@ -283,7 +316,20 @@ def update_backward_dropdown(click, selected, sesid):
     else:
         outputvalues = [{'label': 'Upload Experiment', 'value': 'boo'}]
     return outputvalues
-
+    '''
+    outputvalues = []
+    test = db.exps[sesid]
+    if test.segments is not None:
+        for value in range(0,test.segments):
+            name = u'Segment{}'.format(str(value))
+            outputvalues.append({'label': name, 'value': value})
+        if selected is not None:
+            if selected != 'None':
+                test.backwardseg = selected
+                print(test.backwardseg, 'BACKWARD SEG')
+    else:
+        outputvalues = [{'label': 'Upload Experiment', 'value': 'boo'}]
+    return outputvalues
 
 @app.callback(
     Output("current-exp", 'children'),
@@ -313,7 +359,7 @@ def exp1(value, sesid):
 
 @app.callback(
     Output("comparsiongraph", 'figure'),
-    [Input('slider', 'value'),
+    [Input('slidervalue', 'value'),
     Input('segmentselector', 'value'),
     Input('sessionid', 'children')]
 )
@@ -322,7 +368,7 @@ def return_comparsion(value, segment, sesid):
     print(segment)
     info = []
     n = 0
-    if segment != []:
+    if segment != [] and value is not None:
         for displaypaths in test.displaypaths:
             if displaypaths != []:
                 samplename = displaypaths[0].split('/')[0]
@@ -330,13 +376,29 @@ def return_comparsion(value, segment, sesid):
                 filenames = []
                 for element in displaypaths:
                     filenames.append(element.split('/')[2])
-                
+                print(value, 'this is value mannnn')
+
                 for indent in test.samples[samplename].sets[setname].indents.values():
                     if indent.name in filenames:
-                        xtemp = indent.piezo[500:2500]
-                        ytemp = indent.load[500:2500]
-                        xtempback = indent.piezo[3500:5500][::-1]
-                        ytempback = indent.load[3500:5500][::-1]
+                        print('AHKDJAHAKAEJHDAJHJWHJKWDHWJHJWHJHWDJHDJHDJHDJHDJHDJHDJHDJHDJHDJHDJDHJDH')
+                        #needs to be dynamic
+                        if indent.piezo[test.forwardseg][0] < indent.piezo[test.forwardseg][-1]:
+                            print('did this happen!?!?!?!')
+                            xtemp = indent.piezo[test.forwardseg].copy()
+                            ytemp = indent.load[test.forwardseg].copy()
+                            xtempback = indent.piezo[test.backwardseg][::-1].copy()
+                            ytempback = indent.load[test.backwardseg][::-1].copy()
+                        else:
+                            xtemp = indent.piezo[test.forwardseg][::-1].copy()
+                            ytemp = indent.load[test.forwardseg].copy()
+                            xtempback = indent.piezo[test.backwardseg].copy()
+                            ytempback = indent.load[test.backwardseg][::-1].copy()
+                            
+
+                        
+                        print(ytemp[-1])
+                        print(value, 'val')
+
                         for i, loadvalue in enumerate(ytemp):
                             if loadvalue < value:
                                 #if loadvalue < (value*1000)/(150):
@@ -344,6 +406,7 @@ def return_comparsion(value, segment, sesid):
                                 lasty = ytemp[i]
                                 xtemp[i] = 0
                                 ytemp[i] = 0
+                        print(lasty, 'this is last y')
                         
                         for i, loadvalue in enumerate(ytempback):
                             if loadvalue < value:
@@ -356,20 +419,29 @@ def return_comparsion(value, segment, sesid):
                         
                         for i in range(len(xtemp)):
                             xtemp[i] = xtemp[i] - lasti
-                            xtempback[i] = xtempback[i] - lastxback
                             if xtemp[i] < 0:
                                 xtemp[i] = 0
+                        
+                        for i in range(len(xtempback)):
+                            xtempback[i] = xtempback[i] - lastxback
                             if xtempback[i] < 0:
                                 xtempback[i] = 0
+
+
                         
                                 
                         for i in range(len(ytemp)):                      
                             ytemp[i] = ytemp[i] - lasty
-                            ytempback[i] = ytempback[i] - lastyback
                             if ytemp[i] < 0:
                                 ytemp[i] = 0
+                            
+                            
+                        for i in range(len(ytempback)):
+                            ytempback[i] = ytempback[i] - lastyback
                             if ytempback[i] < 0:
                                 ytempback[i] = 0
+                        
+
 
                     
                         if 'forward' in segment:
@@ -377,6 +449,7 @@ def return_comparsion(value, segment, sesid):
                         if 'backward' in segment:
                             info.append(go.Scatter(x=xtempback, y=ytempback, showlegend=False, line=test.availablecolors[n]))
                 n += 1
+            
                     
       
 
@@ -447,8 +520,9 @@ def update_output2(input2):
               [Input('upload-data', 'contents'),
               Input('sessionid', 'children')],
               State('upload-data', 'filename'),
-               State('upload-data', 'last_modified'))
-def update_output(list_of_contents, sesid, list_of_names, list_of_dates):
+               State('upload-data', 'last_modified'),
+               State('filetype', 'value'))
+def update_output(list_of_contents, sesid, list_of_names, list_of_dates, filetype):
     test = db.exps[sesid]
     if list_of_contents is not None:
         if list_of_names[0].split('.')[-1] == 'zip':
@@ -462,7 +536,38 @@ def update_output(list_of_contents, sesid, list_of_names, list_of_dates):
                 zip_str = io.BytesIO(content_decoded)
                 # Now you can use ZipFile to take the BytesIO output
                 zip_obj = ZipFile(zip_str, 'r')
+
                 
+                zip_obj.extractall('apps/converted/' + sesid + '/')
+                uploaded_folders = os.listdir('apps/converted/' + sesid + '/')
+                for element in uploaded_folders:
+                    if element != '__MACOSX':
+                        test.assignname(element)
+                        for root, dirs, files in os.walk('apps/converted/' + sesid + '/' + element, topdown=False):
+                            for name in files:
+                                print(os.path.join(root, name))
+                                name = os.path.join(root, name)
+                                if  name.split('/')[2] != '' and name.split('/')[-1] != '.DS_Store':
+                                    #do same thing but with objects and 2 lists
+                                    print(name.split('/')[-3])
+                                    print(name, 'full name')
+                                    
+                                    if name.split('/')[-3] not in test.samples.keys():
+                                        test.addsample(name.split('/')[-3])
+                                    
+                                    if name.split('/')[-2] not in test.samples[name.split('/')[-3]].sets.keys():
+                                        test.samples[name.split('/')[-3]].addset(name.split('/')[-2])
+                                    if name.split('/')[-1] not in test.samples[name.split('/')[-3]].sets[name.split('/')[-2]].indents.keys():
+                                        print(filetype, 'this is filetype')
+                                        test.samples[name.split('/')[-3]].sets[name.split('/')[-2]].addindent(name.split('/')[-1], None, name, filetype)
+                                        test.segments = test.samples[name.split('/')[-3]].sets[name.split('/')[-2]].indents[name.split('/')[-1]].segments 
+                                        #test.segments = test.samples[name.split('/')[-3]].sets[name.split('/')[-2]].indents[name.split('/')[-1]].segments              
+                shutil.rmtree('apps/converted/' + sesid + '/')
+                        
+                                             
+                #test.assignname(name.split('.')[0])
+                print('testing HELLOOOO')
+                '''
                 test.assignname(name.split('.')[0])
                 out = ConvertOptics()
                 x = 0
@@ -487,6 +592,8 @@ def update_output(list_of_contents, sesid, list_of_names, list_of_dates):
             print(test.samples)
             #print(test.samples['Rubber'], test.samples['Rubber'].sets['Day2'].indents )
             #test.outputdata()
+            '''
+            
 
         else:
             children = [
@@ -498,6 +605,8 @@ def update_output(list_of_contents, sesid, list_of_names, list_of_dates):
     
 
 def parse_contents(contents, filename, date):
+    print(filename, 'hello')
+
     content_type, content_string = contents.split(',')
     decoded = base64.b64decode(content_string)
     print(decoded[0:110])
@@ -505,7 +614,7 @@ def parse_contents(contents, filename, date):
     current.loaddata(decoded)
     print(filename)
     current.loadheader(decoded)
-    current.createfile()
+    #current.createfile()
 
     return html.Div([
         html.H5(filename),
@@ -672,7 +781,7 @@ prev = None
 
 @app.callback(
     [Output("overviewgraph", 'figure'),
-     Output('slider', 'max')],
+    Output('slidervalue', 'value')],
     [Input("slider", 'value'),
     Input('segmentselector', 'value'),
     Input('select-experiment', 'n_clicks'),
@@ -685,6 +794,7 @@ def return_graph(value, segment, new, sesid):
     info = []
     n = 0
     top = 100
+    yaxismax = 1
     if segment != []:
         for displaypaths in test.displaypaths:
             if displaypaths != []:
@@ -694,23 +804,38 @@ def return_graph(value, segment, new, sesid):
                 for element in displaypaths:
                     filenames.append(element.split('/')[2])
                 
+                
                 for indent in test.samples[samplename].sets[setname].indents.values():
                     if indent.name in filenames:
                         if 'forward' in segment:
-                            info.append(go.Scatter(x=indent.piezo[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]][0::10], y=indent.load[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]][0::10], name=indent.name, line=test.availablecolors[n], showlegend=False))
-                            top = max(indent.load[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]])
+                            info.append(go.Scatter(x=indent.piezo[test.forwardseg][0::10], y=indent.load[test.forwardseg][0::10], name=indent.name, line=test.availablecolors[n], showlegend=False))
+                            yaxismax = max(indent.load[test.forwardseg])
+                            yaxismin = min(indent.load[test.forwardseg])
+                            xaxismax = max(indent.piezo[test.forwardseg])
+                            xaxismin = min(indent.piezo[test.forwardseg])
+                            #info.append(go.Scatter(x=indent.piezo[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]][0::10], y=indent.load[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]][0::10], name=indent.name, line=test.availablecolors[n], showlegend=False))
+                            #top = max(indent.load[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]])
                             #info.append(indent.load[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]])
                             #x = indent.piezo[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]]
 
                         if 'backward' in segment:
-                            top = max(indent.load[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]])
-                            info.append(go.Scatter(x=indent.piezo[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]][0::10], y=indent.load[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]][0::10], name=indent.name, showlegend=False, line=test.availablecolors[n]))
+                            #top = max(indent.load[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]])
+                            #info.append(go.Scatter(x=indent.piezo[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]][0::10], y=indent.load[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]][0::10], name=indent.name, showlegend=False, line=test.availablecolors[n]))
+                            tyaxismax = max(indent.load[test.backwardseg])
+                            yaxismin = min(indent.load[test.backwardseg])
+                            xaxismax = max(indent.piezo[test.backwardseg])
+                            xaxismin = min(indent.piezo[test.backwardseg])
+                            info.append(go.Scatter(x=indent.piezo[test.backwardseg], y=indent.load[test.backwardseg], name=indent.name, showlegend=False, line=test.availablecolors[n]))
                             
 
                 n+=1 
 
                 if value is not None:
-                    info.append(go.Scattergl(x=list(range(0,10000))[0::10], y=np.full(10001, value)[0::10], name='Threshold', showlegend=False, line = dict(color='#E44236')))
+                    print(value, 'VALLUUE')
+                    print(top)
+                    print(int(yaxismin))
+                    
+                    info.append(go.Scattergl(x=list(range(int(xaxismin),int(xaxismax)))[0::10], y=np.full(int(xaxismax), (yaxismax/100)*value)[0::10], name='Threshold', showlegend=False, line = dict(color='#E44236')))
                     #info.append(go.Scattergl(x=list(range(0,10000))[0::10], y=np.full(10001, value/150)[0::10], name='Threshold', showlegend=False, line = dict(color='#E44236')))
                     
         print('oi, oi')
@@ -746,4 +871,8 @@ def return_graph(value, segment, new, sesid):
     )
     #toc=timeit.default_timer()
     #print('Data Points: ', N, '/ TIME: ', toc - tic)
-    return fig, top
+    if value is None:
+        out = 0
+    else:
+        out = ((yaxismax/100)*value)
+    return fig, out

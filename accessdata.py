@@ -1,8 +1,10 @@
 import json
 import os
 from apps.opticsparser import ConvertOptics
+from apps.opticsparser import ConvertRangeAFM
 
 converter = ConvertOptics()
+AFMformats = ConvertRangeAFM()
 
 class Data():
     def __init__(self):
@@ -24,6 +26,7 @@ class Experiment():
         self.data = {}
         self.displaypaths = [[],[],[],[]]
         self.flag = False
+        self.numsegs = None
         #dict(color="rgba(255,0,0,0.2)", width=1)
         self.availablecolors = [dict(color='#575E76', width=1), dict(color='#C7980A', width=1), dict(color='#F4651F', width=1), dict(color='#82D8A7', width=1), dict(color='#CC3A05', width=1), dict(color='#575E76', width=1), dict(color='#156943',width=1), dict(color='#0BD055',width=1), dict(color='#ACD338',width=1)]
 
@@ -87,24 +90,24 @@ class Set():
         #self.loadindents()
         #self.loadindentszip(self.file)
     
-    def addindent(self, name, zip_obj, filepath):
+    def addindent(self, name, zip_obj, filepath, afmformat):
         #self.indentnames.append(name)
         #self.indents.append(Rawdata(name, zipobject=zip_obj, files=filepath))
-        self.indents[name] = Rawdata(name, zipobject=zip_obj, files=filepath)
+        self.indents[name] = Rawdata(name, zipobject=zip_obj, files=filepath, afmformat=afmformat )
     
     
             
                 
 
 class Rawdata():
-    def __init__(self, name, zipobject=None, files=None):
+    def __init__(self, name, zipobject=None, files=None, afmformat=None):
         self.zip_obj = zipobject
         self.file = files
         self.displayflag = False
         
         #Header Info
         self.name = name
-        self.segments = [0]
+        self.segments = None
         self.forwardsegment = None
         self.backwardsegment = None
         self.tipradius = None
@@ -122,23 +125,53 @@ class Rawdata():
         self.cantilever = []
         self.piezo = []
         self.auxiliary = []
-        self.convertdata()
+        #self.convertdata()
+        print('hehehehehehehehehehehehehehehe')
+        print(afmformat, 'formmattt')
+        if afmformat == 'Optics11':
+            self.loaddataoptics(converter.realdata(self.file))
+            self.loadheader(converter.openrealfile(self.file))
+        else:
+            self.loaddatafull(AFMformats.loaddata(self.file))
+        
+
+
+     
     
     def convertdata(self):
         data = b''
         for line in self.zip_obj.open(self.file):
             data += line
+        #print(data, 'IS BInary')
         self.loaddata(converter.loaddata(data))
         self.loadheader(converter.loadheader(data))
     
     
-    def loaddata(self, data):
+    def loaddataoptics(self, data):
+        #get index here and split up data
+        test = [0]
+        
+
         self.time = data['results']['Time']
+        print(len(self.time), 'This is length of time')
         self.load = data['results']['Load']
         self.indentation = data['results']['Indentation']
         self.cantilever = data['results']['Cantilever']
         self.piezo = data['results']['Piezo']
         self.auxiliary = data['results']['Auxiliary']
+        
+
+    def loaddatafull(self, fulldata):
+
+        raw_data = fulldata[0]
+        self.time = raw_data['time']
+        self.piezo = raw_data['piezo']
+        self.load = raw_data['load']
+        metadata = fulldata[1]
+        self.cantileverk = metadata['spring constant']
+        self.segments = len(self.load)
+
+
 
     def loadheader(self, data):
         self.tipradius = data['tipradius']
@@ -147,9 +180,13 @@ class Rawdata():
         self.youngsprovided = data['youngsprovided']
         self.ypos = data['ypos']
         self.xpos = data['xpos']
-        self.segments += data['indexes']
-        print(self.segments)
-    
+        segi = [0]
+        segi += data['indexes']
+        self.piezo = [self.piezo[segi[0]:segi[1]]] + [self.piezo[segi[1]:segi[2]]] + [self.piezo[segi[2]:segi[3]]] + [self.piezo[segi[3]:segi[4]]] + [self.piezo[segi[4]:segi[5]]] 
+        self.time = [self.time[segi[0]:segi[1]]] + [self.time[segi[1]:segi[2]]] + [self.time[segi[2]:segi[3]]] + [self.time[segi[3]:segi[4]]] + [self.time[segi[4]:segi[5]]] 
+        self.load = [self.load[segi[0]:segi[1]]] + [self.load[segi[1]:segi[2]]] + [self.load[segi[2]:segi[3]]] + [self.load[segi[3]:segi[4]]] + [self.load[segi[4]:segi[5]]] 
+        self.segments = len(self.load)
+
     def assignforward(self, forward):
         self.forwardsegment = forward
 

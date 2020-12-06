@@ -24,7 +24,9 @@ from scipy.optimize import curve_fit
 
 from apps.prepare import current
 
-
+"""
+This script creates the analysis page.
+"""
 
 SIDEBAR_STYLE = {
     'box-sizing':'border-box',
@@ -54,22 +56,41 @@ cpfunctions = ContactPoint()
 filters = Filters()
 
 
+class testingclass():
+    '''
+    This class generates the html output
+    '''
+    def testclass(self):
+        pass
 
-login = html.Div([
-    html.H2("Log In", style={'text-align': 'center'}),
-    dcc.Input(id="username", type="text", placeholder="User Name", debounce=True),
-    dcc.Input(id="key", type="password", placeholder="Key", debounce=True),
-    html.Button('Login', id='loginbutton', n_clicks=0, style={'float':'right', 'box-sizing':'border-box', 'margin-right':'2%'}),
-    html.Br(),
-    html.Div(id='currentusername', style={'display': 'none'}),
-    #dcc.Store(id='rawdata'),
-    html.Div(id='rawdata', style={'display': 'none'}),
+    def login(self):
+        """
+            creates the variables associated with the class
+
+            :type name: string
+            :param name: the name of the pet
+            
+            :type owner: string
+            :param owner: the owner of the pet
+        """
+        return html.Div([
+            html.H2("Log In", style={'text-align': 'center'}),
+            dcc.Input(id="username", type="text", placeholder="User Name", debounce=True),
+            dcc.Input(id="key", type="password", placeholder="Key", debounce=True),
+            html.Button('Login', id='loginbutton', n_clicks=0, style={'float':'right', 'box-sizing':'border-box', 'margin-right':'2%'}),
+            html.Br(),
+            html.Div(id='currentusername', style={'display': 'none'}),
+            #dcc.Store(id='rawdata'),
+            html.Div(id='rawdata', style={'display': 'none'}),
 
 
-    html.H2('')
+            html.H2('')
 
 
-], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
+        ], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
+graphics = testingclass()
+
+login = graphics.login()
 
 @app.callback(
     dash.dependencies.Output('currentusername', 'value'),
@@ -700,8 +721,6 @@ def updatepreval(value):
 
       
    
-
-
 layout = html.Div([
     html.Div([
         login,

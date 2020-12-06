@@ -1,6 +1,10 @@
 import json
 import re
 import os
+import afmformats
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 class ConvertFormat:
@@ -81,11 +85,37 @@ class ConvertOptics(ConvertFormat):
             self.data[self.filename]['results']["Piezo"].append(float(info[4]))
             self.data[self.filename]['results']["Auxiliary"].append(float(info[5]))
         return self.data[self.filename]
+
+    def realdata(self, filepath):
+        self.data[self.filename]['results'] ={"Time":[], "Load":[], "Indentation":[], "Cantilever":[], "Piezo":[], "Auxiliary":[]}
+        with open(filepath) as myfile:
+            rawdata = myfile.readlines()[35:-1] 
+
+        for line in rawdata:
+            info = re.split(r'\t+', line)
+            
+            self.data[self.filename]['results']["Time"].append(float(info[0]))
+            self.data[self.filename]['results']["Load"].append(float(info[1])*1000)
+            self.data[self.filename]['results']["Indentation"].append(float(info[2]))
+            self.data[self.filename]['results']["Cantilever"].append(float(info[3]))
+            self.data[self.filename]['results']["Piezo"].append(float(info[4]))
+            self.data[self.filename]['results']["Auxiliary"].append(float(info[5][:-2]))
+        return self.data[self.filename]
             
 
     
     def extractvalue(self, sentence):
+        
         return float(re.split(r"[~\\r\\n\\t]+", sentence)[-2])
+    
+    def extractopenfile(self, sentence):
+        return float(sentence.split()[-1])
+
+    def extractindexopenfile(self, index, head):
+        temp = 0
+        for i in range(index):
+            temp += self.data[self.filename]['results']["Time"].index(self.extractopenfile(head[20+i]))
+        return temp
 
         
 
@@ -96,10 +126,51 @@ class ConvertOptics(ConvertFormat):
         temp = 0
         for i in range(index):
             temp += self.data[self.filename]['results']["Time"].index(self.extractvalue(head[20+i]))
+        print(temp)
         return temp
+    
+
+
+    def openrealfile(self, filepath):
+        with open(filepath) as myfile:
+            head = myfile.readlines()[0:33]
+        
+        #Assign variables
+        print(self.filename, 'filename')
+        self.data[self.filename]['header'] = {
+            'tipradius': self.extractopenfile(head[11]),
+            'calibrationfactor': self.extractopenfile(head[12]),
+            'cantileverk': self.extractopenfile(head[9]),
+            'youngsprovided': self.extractopenfile(head[-2]),
+            'xpos': self.extractopenfile(head[3]),
+            'ypos': self.extractopenfile(head[4]),
+            'indexes': [self.extractindexopenfile(1,head), self.extractindexopenfile(2,head), self.extractindexopenfile(3,head), self.extractindexopenfile(4,head), self.extractindexopenfile(5,head)]
+        }
+        print(self.data[self.filename]['header'])
+        return self.data[self.filename]['header']
 
 
 
+class ConvertRangeAFM(ConvertFormat):
+    def __init__(self, experiment_name=None, filename=None):
+        super().__init__(experiment_name, filename)
+        self.raw_data = {'load': None, 'peizo': None, 'time': None}
+        self.metadata = None
 
+    def loaddata(self, filepath):
+        dslist = afmformats.load_data(filepath)
+        fd = afmformats.afm_fdist.AFMForceDistance(dslist[0]._raw_data, dslist[0].metadata, diskcache=False)
+        self.raw_data['piezo'] = [fd.appr['height (piezo)']*1e9] + [fd.retr['height (piezo)']*1e9]
+        self.raw_data['load'] = [fd.appr['force']*1e9] + [fd.retr['force']*1e9]
+        self.raw_data['time'] = [fd.appr['time']] + [fd.retr['time']]
+
+        self.metadata = fd.metadata
+        return self.raw_data, self.metadata
+        
+        
+
+
+
+    
 
 
