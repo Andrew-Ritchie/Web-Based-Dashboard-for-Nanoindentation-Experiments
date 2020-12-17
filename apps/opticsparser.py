@@ -39,7 +39,7 @@ class ConvertFormat:
     def assignfilename(self, filename):
         self.filename = filename
         self.data = {self.filename : {'header':{}, 'results':{} } }
-        print(filename)
+        #print(filename)
         
     
     def assignsampname(self, sampname):
@@ -59,7 +59,7 @@ class ConvertOptics(ConvertFormat):
         
 
         #Assign variables
-        print(self.filename, 'filename')
+        #print(self.filename, 'filename')
         self.data[self.filename]['header'] = {
             'tipradius': self.extractvalue(head[11]),
             'calibrationfactor': self.extractvalue(head[12]),
@@ -126,7 +126,7 @@ class ConvertOptics(ConvertFormat):
         temp = 0
         for i in range(index):
             temp += self.data[self.filename]['results']["Time"].index(self.extractvalue(head[20+i]))
-        print(temp)
+        #print(temp)
         return temp
     
 
@@ -136,7 +136,7 @@ class ConvertOptics(ConvertFormat):
             head = myfile.readlines()[0:33]
         
         #Assign variables
-        print(self.filename, 'filename')
+        #print(self.filename, 'filename')
         self.data[self.filename]['header'] = {
             'tipradius': self.extractopenfile(head[11]),
             'calibrationfactor': self.extractopenfile(head[12]),
@@ -146,7 +146,7 @@ class ConvertOptics(ConvertFormat):
             'ypos': self.extractopenfile(head[4]),
             'indexes': [self.extractindexopenfile(1,head), self.extractindexopenfile(2,head), self.extractindexopenfile(3,head), self.extractindexopenfile(4,head), self.extractindexopenfile(5,head)]
         }
-        print(self.data[self.filename]['header'])
+        #print(self.data[self.filename]['header'])
         return self.data[self.filename]['header']
 
 

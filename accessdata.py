@@ -47,8 +47,9 @@ class Experiment():
             for sets in sample.sets.values():
                 outexperiment[self.name][sample.name][sets.name] = {}
                 for indent in sets.indents.values():
-                    outexperiment['metadata'] = {'tipradius' : (indent.tipradius*1000), 'cantileverk':indent.cantileverk}
-                    outexperiment[self.name][sample.name][sets.name][indent.name] = {'time':indent.time, 'load':indent.load, 'indentation': indent.indentation, 'cantilever': indent.cantilever, 'piezo': indent.piezo, 'auxiliary': indent.auxiliary}
+                    if indent.filtered == True:
+                        outexperiment['metadata'] = {'tipradius' : (indent.tipradius*1000), 'cantileverk':indent.cantileverk}
+                        outexperiment[self.name][sample.name][sets.name][indent.name] = {'time':indent.time[1], 'load':indent.load[1], 'piezo': indent.piezo[1]}
         os.mkdir(sessionid)
         with open(sessionid + '/example.json','w') as f: 
             json.dump(outexperiment, f, indent=4) 
@@ -104,6 +105,7 @@ class Rawdata():
         self.zip_obj = zipobject
         self.file = files
         self.displayflag = False
+        self.filtered = True
         
         #Header Info
         self.name = name
@@ -126,8 +128,8 @@ class Rawdata():
         self.piezo = []
         self.auxiliary = []
         #self.convertdata()
-        print('hehehehehehehehehehehehehehehe')
-        print(afmformat, 'formmattt')
+        #print('hehehehehehehehehehehehehehehe')
+        #print(afmformat, 'formmattt')
         if afmformat == 'Optics11':
             self.loaddataoptics(converter.realdata(self.file))
             self.loadheader(converter.openrealfile(self.file))
@@ -153,7 +155,7 @@ class Rawdata():
         
 
         self.time = data['results']['Time']
-        print(len(self.time), 'This is length of time')
+        #print(len(self.time), 'This is length of time')
         self.load = data['results']['Load']
         self.indentation = data['results']['Indentation']
         self.cantilever = data['results']['Cantilever']

@@ -8,7 +8,7 @@ import os
 from plotly.subplots import make_subplots
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State
-from app import app, cache
+from app import app
 from apps.kaggle2 import KaggleAPI
 from apps.kaggle2 import DataProcessor
 from dash.exceptions import PreventUpdate
@@ -348,7 +348,7 @@ def indentationoutput(value, username, cpindexes, data):
         sample = element.split('/')[1]
         sets = element.split('/')[2]
         for indent in list(cpindexes[element].keys()):
-            indentation_array = YM.calculate_indentation(data[element][indent], raw_data[expname][sample][sets][indent]['piezo'][500:2500], cpindexes[element][indent], cantileverk)                
+            indentation_array = YM.calculate_indentation(data[element][indent], raw_data[expname][sample][sets][indent]['piezo'], cpindexes[element][indent], cantileverk)                
             print(len(indentation_array), len(data[element][indent]), 'TESTING THIS')
             print(data[element][indent][-2:])
             
@@ -381,7 +381,8 @@ def indentationoutput(value, username, cpindexes, data):
 filter1 = html.Div(id='savgol', children=[
             html.H2("Savgol Filter"),
             dcc.Store(id='savgoldata', storage_type='session'),
-            dcc.Input(id="savgolzwin", type="number", value=0)
+            html.P('Displacement Window', style={'float':'left', 'text-indent':'0'}),
+            dcc.Input(id="savgolzwin", type="number", value=21)
 
             
             
@@ -409,7 +410,7 @@ def savgol(order, win, username, sample1, sample2):
         sample = datapath.split('/')[1]
         sets = datapath.split('/')[2]
         for indent in list(raw_data[expname][sample][sets].keys()):
-            force = filters.savgol(raw_data[expname][sample][sets][indent]['load'][500:2500], raw_data[expname][sample][sets][indent]['piezo'][500:2500] )
+            force = filters.savgol(raw_data[expname][sample][sets][indent]['load'], raw_data[expname][sample][sets][indent]['piezo'] )
             if datapath in data.keys():
                 data[datapath][indent] = force
             else:
@@ -476,7 +477,7 @@ def youngs(value, username, cpindexes, data):
         sample = element.split('/')[1]
         sets = element.split('/')[2]
         for indent in list(cpindexes[element].keys()):
-            indentation_array = YM.calculate_indentation(data[element][indent], raw_data[expname][sample][sets][indent]['piezo'][500:2500], cpindexes[element][indent], cantileverk)
+            indentation_array = YM.calculate_indentation(data[element][indent], raw_data[expname][sample][sets][indent]['piezo'], cpindexes[element][indent], cantileverk)
             elasticity = YM.fitHertz(indentation_array, data[element][indent], cpindexes[element][indent], tipradius, fit_indentation_value=300)
             caldata[indent] = elasticity
             x.append(elasticity)
@@ -549,6 +550,7 @@ def data(value, username, test, sample1, sample2, athreshold, fthreshold, deltax
     print(deltax, 'delta')
     print(order)
     y = order.index('inspect')
+    
     raw_data = process.uploadrawdata(username)
     info = []
     availablecolors = [dict(color='#E44236', width=1), dict(color='#3498DB',width=1), dict(color='#2ecc72',width=1), dict(color='#E74292',width=1), dict(color='#575E76', width=1), dict(color='#C7980A', width=1), dict(color='#F4651F', width=1), dict(color='#82D8A7', width=1), dict(color='#CC3A05', width=1)]
@@ -563,32 +565,36 @@ def data(value, username, test, sample1, sample2, athreshold, fthreshold, deltax
             sets = element.split('/')[2]
             cpindexes[element] = {}
             for indent in list(outdata[element].keys()):
-                info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'][500:2500], y=outdata[element][indent], line = availablecolors[index], name = indent, showlegend=False))
-                cp = cpfunctions.calculate(outdata[element][indent], raw_data[expname][sample][sets][indent]['piezo'][500:2500], athreshold, fthreshold, deltax)
+                info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'], y=outdata[element][indent], line = availablecolors[index], name = indent, showlegend=False))
+                cp = cpfunctions.calculate(outdata[element][indent], raw_data[expname][sample][sets][indent]['piezo'], athreshold, fthreshold, deltax)
                 if cp is not None: 
                     info.append(go.Scattergl(mode='markers', x=[cp[0]], y=[cp[1]], showlegend=False, marker=dict(color='black', size=10)))
                     cpindexes[element][indent] = cp[2]
                     print(cp[0], cp[1], 'indexes')
                 else:
                     print(indent, 'FAILEEDD')
+                
             index += 1
     else:
+        print('hellooooooo')
         raw_data = process.uploadrawdata(username)
-        data = process.uploadrawdata(username)
         availablecolors = [dict(color='#E44236', width=1), dict(color='#3498DB',width=1), dict(color='#2ecc72',width=1), dict(color='#E74292',width=1), dict(color='#575E76', width=1), dict(color='#C7980A', width=1), dict(color='#F4651F', width=1), dict(color='#82D8A7', width=1), dict(color='#CC3A05', width=1)]
         index = 0
         info = []
 
-        selected_data = sample1 + sample2
+        selected_data = sample1
         for datapath in selected_data:
             expname = datapath.split('/')[0]
             sample = datapath.split('/')[1]
             sets = datapath.split('/')[2]
             for indent in list(raw_data[expname][sample][sets].keys()):                
-                info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'][500:2500], y=raw_data[expname][sample][sets][indent]['load'][500:2500], line = availablecolors[index], name = indent, showlegend=False))
-                cp = cpfunctions.calculate(raw_data[expname][sample][sets][indent]['load'][500:2500], raw_data[expname][sample][sets][indent]['piezo'][500:2500], athreshold, fthreshold, deltax)
+                info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'], y=raw_data[expname][sample][sets][indent]['load'], line = availablecolors[index], name = indent, showlegend=False))
+                cp = cpfunctions.calculate(raw_data[expname][sample][sets][indent]['load'], raw_data[expname][sample][sets][indent]['piezo'], athreshold, fthreshold, deltax)
                 info.append(go.Scattergl(mode='markers', x=[cp[0]], y=[cp[1]], showlegend=False, marker=dict(color='black', size=10)))
             index += 1
+        
+        print('DONE AND DUSTED')
+
     
 
     fig = go.Figure(data=info)
@@ -605,14 +611,132 @@ def data(value, username, test, sample1, sample2, athreshold, fthreshold, deltax
     return fig, cpindexes
 
 
+overcp = html.Div([
+    html.Div(id='inspect', children=[
+        
+        dcc.Graph(id='overcurves',
+                  style={'float':'left', 'width':'65%', 'padding':'1%', 'bgcolor': 'black'}, 
+                  config={'displayModeBar':False},
+        ),
+        dcc.Graph(id='cpgraph',style={'float':'left', 'width': '30%', 'padding': '1%'}, config={'displayModeBar':False}),
+        html.Br(),
+        
+        html.Br(),
+        dcc.Input(id='athresh', value=10, style={'float':'right'}),
+        html.P('Athreshold', style={'text-indent':'0', 'float':'right'}),
+        dcc.Input(id='fthresh', value=100, style={'float':'right'}),
+        html.P('Fthreshold', style={'text-indent':'0', 'float':'right'}),
+        dcc.Input(id='delta', value=2000, style={'float':'right', 'padding-right':'0'}),
+        html.P('Delta', style={'text-indent':'0', 'float':'right'}),
+        html.Br(),
+        html.Br()
+    ], style = {'margin':'0%', 'padding':'0%'}),
+
+], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'})
+
+@app.callback(
+    dash.dependencies.Output('overcurves', 'figure'),
+     [dash.dependencies.Input("currentusername", "value"),
+     dash.dependencies.Input("sample1", "value"),
+     dash.dependencies.Input("sample2", "value")],
+     )
+def overviewgraph(username, sample1, sample2):
+    raw_data = process.uploadrawdata(username)
+    selected_data = sample1
+    info = []
+    availablecolors = [dict(color='#E44236', width=1), dict(color='#3498DB',width=1), dict(color='#2ecc72',width=1), dict(color='#E74292',width=1), dict(color='#575E76', width=1), dict(color='#C7980A', width=1), dict(color='#F4651F', width=1), dict(color='#82D8A7', width=1), dict(color='#CC3A05', width=1)]
+    index = 0
+    for datapath in selected_data:
+        expname = datapath.split('/')[0]
+        sample = datapath.split('/')[1]
+        sets = datapath.split('/')[2]
+        for indent in list(raw_data[expname][sample][sets].keys()):                
+            info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'], y=raw_data[expname][sample][sets][indent]['load'], line = availablecolors[index], name = indent, showlegend=False))            
+        index += 1
+
+    fig = go.Figure(data=info)
+    
+    fig.update_layout(
+        title="Experimental Overview",
+        xaxis_title='Displacement [nm]',
+        yaxis_title='Load [nN]',
+        plot_bgcolor='#DDDDDD',
+        paper_bgcolor='#DDDDDD',
+        clickmode='event+select'
+    )
+    return fig
+
+@app.callback(
+    dash.dependencies.Output('cpgraph', 'figure'),
+     [dash.dependencies.Input("overcurves", "clickData"),
+     dash.dependencies.Input("currentusername", "value"),
+     dash.dependencies.Input('delta', 'value'),
+     dash.dependencies.Input('athresh', 'value'),
+     dash.dependencies.Input('fthresh', 'value')],
+     [dash.dependencies.State('overcurves', 'figure')])
+def cpgraph(click_data, username, delta, athresh, fthresh, figure):
+    print(delta)
+    raw_data = process.uploadrawdata(username)
+    info = []
+    if click_data is not None:
+        #country_name = data['points'][0]['customdata']
+        curve_number = click_data['points'][0]['curveNumber']
+        trace_name = figure['data'][curve_number]['name']
+        print(trace_name)
+        info.append(go.Scattergl(x=figure['data'][curve_number]['x'], y=figure['data'][curve_number]['y'], line = dict(color='#2ecc72',width=1), name = trace_name, showlegend=False))
+        cp = cpfunctions.calculate(figure['data'][curve_number]['y'], figure['data'][curve_number]['x'], float(athresh), float(fthresh), float(delta))
+        print(cp, 'this is CP')
+        info.append(go.Scattergl(mode='markers', x=[cp[0]], y=[cp[1]], showlegend=False, marker=dict(color='black', size=10)))
         
 
+    fig = go.Figure(data=info)
+    
+    fig.update_layout(
+        title="Threshold Contact Point",
+        xaxis_title='Displacement [nm]',
+        yaxis_title='Load [nN]',
+        plot_bgcolor='#DDDDDD',
+        paper_bgcolor='#DDDDDD',
+        clickmode='event+select'
+    )
+    return fig
 
-accessfeatures = { 'overview':overview, 'filter1':filter1, 'inspect':inspect, 'elasticmod': elasticmod, 'indentation':indentation }
+'''
+@app.callback(
+    dash.dependencies.Output('cpgraph', 'figure'),
+     [dash.dependencies.Input("overcurves", "clickData"),
+     dash.dependencies.Input("currentusername", "value")])
+def cpgraph(click_data, username):
+    raw_data = process.uploadrawdata(username)
+    info = []
+    if click_data is not None:
+        print(click_data)
+        #country_name = data['points'][0]['customdata']
+        curve_number = click_data['points'][0]['curveNumber']
+        trace_name = figure['data'][curve_number]['name']
+        info.append(go.Scattergl(x=figure['data'][curve_number]['x'], y=figure['data'][curve_number]['y'], line = dict(color='#2ecc72',width=1), name = trace_name, showlegend=False))
+        
+        #cp = cpfunctions.calculate(figure['data'][curve_number]['y'], figure['data'][curve_number]['x'])
+        #print(cp, 'this is CP')
+        #info.append(go.Scattergl(mode='markers', x=[cp[0]], y=[cp[1]], showlegend=False, marker=dict(color='black', size=10)))
+        
+
+    fig = go.Figure(data=info)
+    
+    fig.update_layout(
+        title="Experimental Overview: Threshold Contact Point",
+        xaxis_title='Displacement [nm]',
+        yaxis_title='Load [nN]',
+        plot_bgcolor='#DDDDDD',
+        paper_bgcolor='#DDDDDD',
+        clickmode='event+select'
+    )
+    return fig
+'''
+accessfeatures = { 'overview':overview, 'filter1':filter1, 'inspect':inspect, 'elasticmod': elasticmod, 'indentation':indentation, 'overcp': overcp }
 
 
 #---------------------------------------------------------------------------------------------------------------------------------------
-
 
 
 
@@ -626,7 +750,8 @@ features = html.Div([
                          {'label': 'Filter1', 'value': 'filter1'},
                          {'label': 'inspect', 'value': 'inspect'},
                          {'label': 'elasticmod', 'value': 'elasticmod'},
-                        {'label': 'indentation', 'value': 'indentation'}],
+                        {'label': 'indentation', 'value': 'indentation'},
+                        {'label': 'overcp', 'value': 'overcp'}],
                 labelStyle={'display': 'block', 'margin':'0%'},
     ),
     html.Br()

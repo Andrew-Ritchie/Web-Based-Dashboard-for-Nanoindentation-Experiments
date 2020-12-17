@@ -35,19 +35,25 @@ class KaggleAPI():
         os.environ['KAGGLE_KEY'] = key
         #os.environ['KAGGLE_PROXY'] = "http://proxy.server:3128" -- this will be used if deploying on pythonanywhere
         self.available_datasets = self.get_datasets()
-        print(subprocess.getoutput("kaggle datasets list -s AFM"))
-        #print(subprocess.getoutput("kaggle datasets list -m"))
-
+        #print(subprocess.getoutput("kaggle datasets list -s AFM"))
+        #os.system("kaggle datasets metadata -p kaggledatasets/ "+ os.environ['KAGGLE_USERNAME']+ "/ andrewritchie98/afm-testdata")
+        #os.system("kaggle datasets metadata -p kaggledatasets/ andrewritchie98/afm-testthis2")
 
 
 
     #This method requires names to have no spaces to work without global varibles, this should be returned into a div
     def get_datasets(self):
         #os.system("kaggle datasets download andrewritchie98/afmapplicationtest")
-        #datalist = subprocess.getoutput("kaggle datasets list -s nuclei-afm-newfile").split('\n')
-        datalist = subprocess.getoutput("kaggle datasets list -m").split('\n')
+        #print(subprocess.getoutput("kaggle datasets list -m"))
+        datalist = subprocess.getoutput("kaggle datasets list -s AFM").split('\n')
+
+        mydatalist = subprocess.getoutput("kaggle datasets list -m").split('\n')
+        for element in mydatalist:
+            if element not in datalist:
+                datalist.append(element)
+    
         available_datasets = []
-        for element in datalist[2:]:
+        for element in datalist[3:]:
             available_datasets.append(' '.join(s for s in element.split(' ') if s).split(' '))
         print(available_datasets, 'test')
         return available_datasets
@@ -63,8 +69,12 @@ class KaggleAPI():
         os.system("kaggle datasets init -p " + path)
         self.edit_metadata(path, title, slug, username)
         os.system("kaggle datasets create -u -p " + path)
+        print(path, title, slug, username)
+        #print(subprocess.getoutput("kaggle datasets files andrewritchie98/afm-" + title))
         #delete the folder your working in 
         shutil.rmtree(path)
+        #print(subprocess.getoutput("kaggle datasets files andrewritchie98/afm-testthis2"))
+
 
     
     def edit_metadata(self, path, title, slug, username):

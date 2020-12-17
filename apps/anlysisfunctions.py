@@ -5,7 +5,7 @@ from scipy.optimize import curve_fit
 
 class ContactPoint:
     
-    def calculate(self, force, displacement, Athreshold=0.01, Fthreshold=10.0, deltax=2000.0):
+    def calculate(self, force, displacement, Athreshold=10, Fthreshold=100.0, deltax=2000.0):
         yth = Athreshold
         x = np.array(displacement)
         y = np.array(force)
@@ -34,7 +34,7 @@ class ContactPoint:
             if y[j]>f0 and y[j-1]<f0:
                 jcp = j
                 break
-        print(x[jcp], y[jcp])
+        #print(x[jcp], y[jcp])
         return [x[jcp], y[jcp], jcp]
 
 class Filters:

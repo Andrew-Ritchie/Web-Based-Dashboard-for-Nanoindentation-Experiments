@@ -26,6 +26,9 @@ import uuid
 from dash.exceptions import PreventUpdate
 from apps.kaggle2 import KaggleAPI
 import shutil
+import dash_core_components as dcc
+import time
+
 
 
 
@@ -94,6 +97,7 @@ uploadarea = html.Div([
         {'label': 'NT-MDT Spectrum Instruments', 'value': 'NT-MDT Spectrum Instruments'},
     ],
     labelStyle={'display': 'block', 'margin':'0%'},
+    value='Optics11',
     
     )], style={'width': '100%', 'margin-left': '1%', 'padding':'0%', "maxHeight": "100px", "overflow": "scroll"}),
 
@@ -116,7 +120,18 @@ uploadarea = html.Div([
         },
         # Allow multiple files to be uploaded
         multiple=True
-    )
+    ),
+    dcc.Loading(
+            id="loading-1",
+            type="default",
+            children=html.Div(id="loading-output-1")
+    ),
+    dcc.Loading(
+            id="loading-2",
+            type="default",
+            children=html.Div(id="loading-output-2")
+    ),
+    
 
 ], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
 
@@ -138,9 +153,11 @@ selectfeature = html.Div([
 
 ], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
 
-
-
-
+'''
+@app.callback(Output("progress", "value"), [Input("interval", "n_intervals")])
+def advance_progress(n):
+    return min(n % 110, 100)
+'''
 
 
 current = ConvertOptics() 
@@ -190,7 +207,20 @@ layout = html.Div([
                 dcc.Graph(id='overviewgraph', style={'float':'left', 'width':'65%', 'padding':'1%', 'bgcolor': 'black'}, config={'displayModeBar':False}),
                 dcc.Graph(id='comparsiongraph',style={'float':'left', 'width': '30%', 'padding': '1%'}, config={'displayModeBar':False}),
             ],style={'padding':'0%'}),
-            html.Button('Convert', id='submit-val', n_clicks=0, style={'float':'left', 'box-sizing':'border-box', 'margin-right':'2%'}),
+            html.Div(children=[
+                html.Div(id='testdiv', style={'display': 'none'}),
+                html.Div(id='selectedcurve', style={'display': 'none'}),
+                html.Div(id='nameofselectedcurve', style={'foat':'left', 'margin':'0%'}),
+                dcc.RadioItems(
+                id='filteredselector',
+                options=[
+                    {'label': 'Keep', 'value': 'True'},
+                    {'label': 'Remove', 'value': 'False'},
+                ],
+                value='Keep',
+                labelStyle={'display': 'inline-block', 'float':'left', 'width':'35%', 'color':'red', 'margin-left':'1%', 'margin-right':'1%'},
+                )], style={'width': '90%', 'display': 'inline-block', 'margin-left': '1%', 'padding':'0%'}),
+            
             html.Button('Convert', id='submit-to-kaggle', n_clicks=0, style={'float':'right', 'box-sizing':'border-box', 'margin-right':'2%'}),
             html.Br(),
             html.Div([
@@ -198,7 +228,6 @@ layout = html.Div([
                 html.Br(),
 
             ]),
-            html.H1('-  '),
             html.Br(),
 
             
@@ -291,7 +320,7 @@ def update_forward_dropdown(click, selected, sesid):
         if selected is not None:
             if selected != 'None':
                 test.forwardseg = selected
-                print(test.forwardseg)
+                #print(test.forwardseg)
     else:
         outputvalues = [{'label': 'Upload Experiment', 'value': 'None'}]
     return outputvalues
@@ -326,7 +355,7 @@ def update_backward_dropdown(click, selected, sesid):
         if selected is not None:
             if selected != 'None':
                 test.backwardseg = selected
-                print(test.backwardseg, 'BACKWARD SEG')
+                #print(test.backwardseg, 'BACKWARD SEG')
     else:
         outputvalues = [{'label': 'Upload Experiment', 'value': 'boo'}]
     return outputvalues
@@ -376,14 +405,14 @@ def return_comparsion(value, segment, sesid):
                 filenames = []
                 for element in displaypaths:
                     filenames.append(element.split('/')[2])
-                print(value, 'this is value mannnn')
+                #print(value, 'this is value mannnn')
 
                 for indent in test.samples[samplename].sets[setname].indents.values():
                     if indent.name in filenames:
-                        print('AHKDJAHAKAEJHDAJHJWHJKWDHWJHJWHJHWDJHDJHDJHDJHDJHDJHDJHDJHDJHDJHDJDHJDH')
+                        #print('AHKDJAHAKAEJHDAJHJWHJKWDHWJHJWHJHWDJHDJHDJHDJHDJHDJHDJHDJHDJHDJHDJDHJDH')
                         #needs to be dynamic
                         if indent.piezo[test.forwardseg][0] < indent.piezo[test.forwardseg][-1]:
-                            print('did this happen!?!?!?!')
+                            #print('did this happen!?!?!?!')
                             xtemp = indent.piezo[test.forwardseg].copy()
                             ytemp = indent.load[test.forwardseg].copy()
                             xtempback = indent.piezo[test.backwardseg][::-1].copy()
@@ -396,8 +425,8 @@ def return_comparsion(value, segment, sesid):
                             
 
                         
-                        print(ytemp[-1])
-                        print(value, 'val')
+                        #print(ytemp[-1])
+                        #print(value, 'val')
 
                         for i, loadvalue in enumerate(ytemp):
                             if loadvalue < value:
@@ -406,7 +435,7 @@ def return_comparsion(value, segment, sesid):
                                 lasty = ytemp[i]
                                 xtemp[i] = 0
                                 ytemp[i] = 0
-                        print(lasty, 'this is last y')
+                        #print(lasty, 'this is last y')
                         
                         for i, loadvalue in enumerate(ytempback):
                             if loadvalue < value:
@@ -471,13 +500,105 @@ def return_comparsion(value, segment, sesid):
     
 
 @app.callback(
-    Output('click-data', 'children'),
-    [Input('overviewgraph', 'clickData')])
+    [Output('nameofselectedcurve', 'children'),
+    Output("filteredselector", "value")],
+    [Input('overviewgraph', 'clickData'),
+    Input('sessionid', 'children')],
+    [State('overviewgraph', 'figure')])
+def display_click_data(click_data, sesid, figure):
+    print('testttttt')
+    '''
+    dataset = db.exps[sesid]
+    print(dataset.displaypaths)
+    sample_name = 'no sam'
+
+    if click_data is not None:
+        curve_number = click_data['points'][0]['curveNumber']
+        x_value = click_data['points'][0]['x']
+        print('FIRE')
+        trace_name = figure['data'][curve_number]['name']
+        pathfound = False
+        while pathfound == False:
+            for element in dataset.displaypaths:
+                if element != []:
+                    for value in element:
+                        path = value.split('/')
+                        if path[-1] == trace_name:
+                            sample_name = path[0]
+                            set_name = path[1]
+                            curve_name = path[2]
+                            pathfound = True
+        if dataset.samples[sample_name].sets[set_name].indents[curve_name].filtered is False:
+            dataset.samples[sample_name].sets[set_name].indents[curve_name].filtered = True
+        else:
+            dataset.samples[sample_name].sets[set_name].indents[curve_name].filtered = False
+        return str(dataset.samples[sample_name].sets[set_name].indents[curve_name].filtered), html.P(trace_name)
+    print(sample_name)
+    return None, html.P('2NapFF 16mgmL GdL S-1 X-1 Y-7 I-1.txt', style={'float':'left'})
+    '''
+    if click_data is not None:
+        curve_number = click_data['points'][0]['curveNumber']
+        trace_name = figure['data'][curve_number]['name']
+
+        dataset = db.exps[sesid]
+        pathfound = False
+        while pathfound == False:
+            for element in dataset.displaypaths:
+                if element != []:
+                    for value in element:
+                        path = value.split('/')
+                        if path[-1] == trace_name:
+                            sample_name = path[0]
+                            set_name = path[1]
+                            curve_name = path[2]
+                            pathfound = True
+        outvalue = str(dataset.samples[sample_name].sets[set_name].indents[curve_name].filtered)
+        return html.P(trace_name), outvalue
+    return None, None
+
+@app.callback(
+    Output('testdiv', 'children'),
+    [Input("filteredselector", "value"),
+    Input('sessionid', 'children')],
+    [State('nameofselectedcurve', 'children'),
+    State('overviewgraph', 'figure')]
+)
+def filtercurve(selectedvalue, sesid, curveinput, figure):
+    print('this fires')
+    print('this is value', selectedvalue)
+    if curveinput is not None:
+        dataset = db.exps[sesid]
+        curvename = curveinput['props']['children']
+        pathfound = False
+        while pathfound == False:
+            for element in dataset.displaypaths:
+                if element != []:
+                    for value in element:
+                        path = value.split('/')
+                        if path[-1] == curvename:
+                            sample_name = path[0]
+                            set_name = path[1]
+                            curve_name = path[2]
+                            pathfound = True
+        
+        if selectedvalue == 'True':
+            dataset.samples[sample_name].sets[set_name].indents[curve_name].filtered = True
+            print('made true')
+        else:
+            dataset.samples[sample_name].sets[set_name].indents[curve_name].filtered = False
+            print('made false')
+    
+
+
+
+
+'''
 def display_click_data(clickData):
     print('2')
 
     return json.dumps(clickData, indent=2)
-
+'''
+'''
 @app.callback(
     Output('one', 'children'),
     [Input("expname", "value")]
@@ -486,7 +607,7 @@ def experiment_name(value):
     print(value)
     current.assignexperiment(value)
     return u'Experiment Name: {}'.format(value)
-
+'''
 
 @app.callback(
     Output("samname", 'children'),
@@ -516,12 +637,25 @@ def update_output2(input2):
     #create the experiment object
     return u'Experiment Name: {}'.format(input2)
 
+
+@app.callback(Output("loading-output-1", "children"), [Input("upload-data", "contents")])
+def input_triggers_spinner(value):
+    time.sleep(1)
+    return None
+
+@app.callback(Output("loading-output-2", "children"), [Input("output-data-upload", "children")])
+def input_triggers_spinner(value):
+    time.sleep(1)
+    return None
+
+
+
 @app.callback(Output('output-data-upload', 'children'),
               [Input('upload-data', 'contents'),
               Input('sessionid', 'children')],
               State('upload-data', 'filename'),
                State('upload-data', 'last_modified'),
-               State('filetype', 'value'))
+               State('filetype', 'value'),)
 def update_output(list_of_contents, sesid, list_of_names, list_of_dates, filetype):
     test = db.exps[sesid]
     if list_of_contents is not None:
@@ -549,8 +683,8 @@ def update_output(list_of_contents, sesid, list_of_names, list_of_dates, filetyp
                                 name = os.path.join(root, name)
                                 if  name.split('/')[2] != '' and name.split('/')[-1] != '.DS_Store':
                                     #do same thing but with objects and 2 lists
-                                    print(name.split('/')[-3])
-                                    print(name, 'full name')
+                                    #print(name.split('/')[-3])
+                                    #print(name, 'full name')
                                     
                                     if name.split('/')[-3] not in test.samples.keys():
                                         test.addsample(name.split('/')[-3])
@@ -564,9 +698,9 @@ def update_output(list_of_contents, sesid, list_of_names, list_of_dates, filetyp
                                         #test.segments = test.samples[name.split('/')[-3]].sets[name.split('/')[-2]].indents[name.split('/')[-1]].segments              
                 shutil.rmtree('apps/converted/' + sesid + '/')
                         
-                                             
+                #return html.P('hello')                           
                 #test.assignname(name.split('.')[0])
-                print('testing HELLOOOO')
+                #print('testing HELLOOOO')
                 '''
                 test.assignname(name.split('.')[0])
                 out = ConvertOptics()
@@ -599,8 +733,8 @@ def update_output(list_of_contents, sesid, list_of_names, list_of_dates, filetyp
             children = [
                 parse_contents(c, n, d) for c, n, d in
                 zip(list_of_contents, list_of_names, list_of_dates)] 
-            return children
-    
+            #return children
+    #return None, None
     
     
 
@@ -795,6 +929,7 @@ def return_graph(value, segment, new, sesid):
     n = 0
     top = 100
     yaxismax = 1
+    tic1 = timeit.default_timer()
     if segment != []:
         for displaypaths in test.displaypaths:
             if displaypaths != []:
@@ -808,11 +943,12 @@ def return_graph(value, segment, new, sesid):
                 for indent in test.samples[samplename].sets[setname].indents.values():
                     if indent.name in filenames:
                         if 'forward' in segment:
-                            info.append(go.Scatter(x=indent.piezo[test.forwardseg][0::10], y=indent.load[test.forwardseg][0::10], name=indent.name, line=test.availablecolors[n], showlegend=False))
+                            info.append(go.Scatter(x=indent.piezo[test.forwardseg], y=indent.load[test.forwardseg], name=indent.name, line=test.availablecolors[n], showlegend=False))
                             yaxismax = max(indent.load[test.forwardseg])
                             yaxismin = min(indent.load[test.forwardseg])
                             xaxismax = max(indent.piezo[test.forwardseg])
                             xaxismin = min(indent.piezo[test.forwardseg])
+                            
                             #info.append(go.Scatter(x=indent.piezo[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]][0::10], y=indent.load[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]][0::10], name=indent.name, line=test.availablecolors[n], showlegend=False))
                             #top = max(indent.load[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]])
                             #info.append(indent.load[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]])
@@ -858,7 +994,10 @@ def return_graph(value, segment, new, sesid):
         fig2 = px.line(df, x='x', y="y", title='La', render_mode='webgl')
         fig.add_trace(fig2.data[0])
     '''
-    
+    toc1 = timeit.default_timer()
+    print('Collecting data Time: ', toc1 - tic1)
+
+    tic2 = timeit.default_timer()
     fig = go.Figure(data=info)
     
 
@@ -875,4 +1014,8 @@ def return_graph(value, segment, new, sesid):
         out = 0
     else:
         out = ((yaxismax/100)*value)
+    toc2 = timeit.default_timer()
+
+    print('after fig', toc2-tic2)
+
     return fig, out
