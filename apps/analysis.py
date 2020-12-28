@@ -651,7 +651,7 @@ def overviewgraph(username, sample1, sample2):
         sample = datapath.split('/')[1]
         sets = datapath.split('/')[2]
         for indent in list(raw_data[expname][sample][sets].keys()):                
-            info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'], y=raw_data[expname][sample][sets][indent]['load'], line = availablecolors[index], name = indent, showlegend=False))            
+            info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'][0::10], y=raw_data[expname][sample][sets][indent]['load'][0::10], line = availablecolors[index], name = indent, showlegend=False))            
         index += 1
 
     fig = go.Figure(data=info)

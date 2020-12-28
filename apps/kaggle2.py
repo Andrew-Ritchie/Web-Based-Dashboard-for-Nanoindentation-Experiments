@@ -65,10 +65,14 @@ class KaggleAPI():
         #once implementated use -q to make it quiet
         os.system("kaggle datasets download -p kaggledatasets/" + os.environ['KAGGLE_USERNAME'] + "/ --unzip " + dataset)
 
-    def upload_dataset(self, path, title, slug, username):
+    def upload_dataset(self, path, title, slug, username, privateorpublic):
+
         os.system("kaggle datasets init -p " + path)
         self.edit_metadata(path, title, slug, username)
-        os.system("kaggle datasets create -u -p " + path)
+        if privateorpublic == 'public':
+            os.system("kaggle datasets create -u -p " + path)
+        else:
+            os.system("kaggle datasets create -p " + path)
         print(path, title, slug, username)
         #print(subprocess.getoutput("kaggle datasets files andrewritchie98/afm-" + title))
         #delete the folder your working in 

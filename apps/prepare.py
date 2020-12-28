@@ -92,9 +92,7 @@ uploadarea = html.Div([
         {'label': 'Optics11', 'value': 'Optics11'},
         {'label': 'JPK Instruments', 'value': 'JPK Instruments'},
         {'label': 'AFM workshop', 'value': 'AFM workshop'},
-        {'label': 'afmformats', 'value': 'afmformats'},
         {'label': 'Asylum Research', 'value': 'Asylum Research'},
-        {'label': 'NT-MDT Spectrum Instruments', 'value': 'NT-MDT Spectrum Instruments'},
     ],
     labelStyle={'display': 'block', 'margin':'0%'},
     value='Optics11',
@@ -121,6 +119,7 @@ uploadarea = html.Div([
         # Allow multiple files to be uploaded
         multiple=True
     ),
+    '''
     dcc.Loading(
             id="loading-1",
             type="default",
@@ -131,7 +130,7 @@ uploadarea = html.Div([
             type="default",
             children=html.Div(id="loading-output-2")
     ),
-    
+    '''
 
 ], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
 
@@ -246,6 +245,15 @@ submit = html.Div(id='kagglepush', children=[
                 dcc.Input(id="title", type="text", placeholder="Experiment name", debounce=True),
                 dcc.Input(id="slugid", type="text", placeholder="Experiment name", debounce=True)
             ], style = {}),
+            dcc.RadioItems(
+                id='privatekaggle',
+                options=[
+                    {'label': 'Public', 'value': 'public'},
+                    {'label': 'Private', 'value': 'private'},
+                    
+                ],
+                value='public'
+            ),  
 
             html.Button('Upload', id='dbpush', n_clicks=0, style={'float':'right', 'box-sizing':'border-box', 'margin-right':'2%'}),
             html.P('Please enter your experimental details, as well as Kaggle credentials.')
@@ -273,12 +281,13 @@ def submitdataset(click, sesid):
      dash.dependencies.State("kagglekey", "value"),
      dash.dependencies.State("title", "value"),
      dash.dependencies.State("slugid", "value"),
-     dash.dependencies.State('sessionid', 'children')]
+     dash.dependencies.State('sessionid', 'children'),
+     dash.dependencies.State('privatekaggle', 'value'),]
 )
-def submitdataset(click, username, key, title, slugid, sessionid):
+def submitdataset(click, username, key, title, slugid, sessionid, private):
     if click != 0:
         kaggle.assign_details(username, key)
-        kaggle.upload_dataset(sessionid + '/', title, slugid, username)
+        kaggle.upload_dataset(sessionid + '/', title, slugid, username, private)
 
 
         #+ os.listdir(sessionid + '/')[0]
@@ -398,86 +407,87 @@ def return_comparsion(value, segment, sesid):
     info = []
     n = 0
     if segment != [] and value is not None:
-        for displaypaths in test.displaypaths:
-            if displaypaths != []:
-                samplename = displaypaths[0].split('/')[0]
-                setname = displaypaths[0].split('/')[1]
-                filenames = []
-                for element in displaypaths:
-                    filenames.append(element.split('/')[2])
-                #print(value, 'this is value mannnn')
+        if value != 0:
+            for displaypaths in test.displaypaths:
+                if displaypaths != []:
+                    samplename = displaypaths[0].split('/')[0]
+                    setname = displaypaths[0].split('/')[1]
+                    filenames = []
+                    for element in displaypaths:
+                        filenames.append(element.split('/')[2])
+                    #print(value, 'this is value mannnn')
 
-                for indent in test.samples[samplename].sets[setname].indents.values():
-                    if indent.name in filenames:
-                        #print('AHKDJAHAKAEJHDAJHJWHJKWDHWJHJWHJHWDJHDJHDJHDJHDJHDJHDJHDJHDJHDJHDJDHJDH')
-                        #needs to be dynamic
-                        if indent.piezo[test.forwardseg][0] < indent.piezo[test.forwardseg][-1]:
-                            #print('did this happen!?!?!?!')
-                            xtemp = indent.piezo[test.forwardseg].copy()
-                            ytemp = indent.load[test.forwardseg].copy()
-                            xtempback = indent.piezo[test.backwardseg][::-1].copy()
-                            ytempback = indent.load[test.backwardseg][::-1].copy()
-                        else:
-                            xtemp = indent.piezo[test.forwardseg][::-1].copy()
-                            ytemp = indent.load[test.forwardseg].copy()
-                            xtempback = indent.piezo[test.backwardseg].copy()
-                            ytempback = indent.load[test.backwardseg][::-1].copy()
-                            
-
-                        
-                        #print(ytemp[-1])
-                        #print(value, 'val')
-
-                        for i, loadvalue in enumerate(ytemp):
-                            if loadvalue < value:
-                                #if loadvalue < (value*1000)/(150):
-                                lasti = xtemp [i]
-                                lasty = ytemp[i]
-                                xtemp[i] = 0
-                                ytemp[i] = 0
-                        #print(lasty, 'this is last y')
-                        
-                        for i, loadvalue in enumerate(ytempback):
-                            if loadvalue < value:
-                                #if loadvalue < (value*1000)/(150):
-                                lastxback = xtempback[i]
-                                lastyback = ytempback[i]
-                                xtempback[i] = 0
-                                ytempback[i] = 0
-                        
-                        
-                        for i in range(len(xtemp)):
-                            xtemp[i] = xtemp[i] - lasti
-                            if xtemp[i] < 0:
-                                xtemp[i] = 0
-                        
-                        for i in range(len(xtempback)):
-                            xtempback[i] = xtempback[i] - lastxback
-                            if xtempback[i] < 0:
-                                xtempback[i] = 0
-
-
-                        
+                    for indent in test.samples[samplename].sets[setname].indents.values():
+                        if indent.name in filenames:
+                            #print('AHKDJAHAKAEJHDAJHJWHJKWDHWJHJWHJHWDJHDJHDJHDJHDJHDJHDJHDJHDJHDJHDJDHJDH')
+                            #needs to be dynamic
+                            if indent.piezo[test.forwardseg][0] < indent.piezo[test.forwardseg][-1]:
+                                #print('did this happen!?!?!?!')
+                                xtemp = indent.piezo[test.forwardseg].copy()
+                                ytemp = indent.load[test.forwardseg].copy()
+                                xtempback = indent.piezo[test.backwardseg][::-1].copy()
+                                ytempback = indent.load[test.backwardseg][::-1].copy()
+                            else:
+                                xtemp = indent.piezo[test.forwardseg][::-1].copy()
+                                ytemp = indent.load[test.forwardseg].copy()
+                                xtempback = indent.piezo[test.backwardseg].copy()
+                                ytempback = indent.load[test.backwardseg][::-1].copy()
                                 
-                        for i in range(len(ytemp)):                      
-                            ytemp[i] = ytemp[i] - lasty
-                            if ytemp[i] < 0:
-                                ytemp[i] = 0
+
+                            
+                            #print(ytemp[-1])
+                            #print(value, 'val')
+                            
+                            for i, loadvalue in enumerate(ytemp):
+                                if loadvalue < value:
+                                    #if loadvalue < (value*1000)/(150):
+                                    lasti = xtemp [i]
+                                    lasty = ytemp[i]
+                                    xtemp[i] = 0
+                                    ytemp[i] = 0
+                            #print(lasty, 'this is last y')
+                            
+                            for i, loadvalue in enumerate(ytempback):
+                                if loadvalue < value:
+                                    #if loadvalue < (value*1000)/(150):
+                                    lastxback = xtempback[i]
+                                    lastyback = ytempback[i]
+                                    xtempback[i] = 0
+                                    ytempback[i] = 0
                             
                             
-                        for i in range(len(ytempback)):
-                            ytempback[i] = ytempback[i] - lastyback
-                            if ytempback[i] < 0:
-                                ytempback[i] = 0
+                            for i in range(len(xtemp)):
+                                xtemp[i] = xtemp[i] - lasti
+                                if xtemp[i] < 0:
+                                    xtemp[i] = 0
+                            
+                            for i in range(len(xtempback)):
+                                xtempback[i] = xtempback[i] - lastxback
+                                if xtempback[i] < 0:
+                                    xtempback[i] = 0
+
+
+                            
+                                    
+                            for i in range(len(ytemp)):                      
+                                ytemp[i] = ytemp[i] - lasty
+                                if ytemp[i] < 0:
+                                    ytemp[i] = 0
+                                
+                                
+                            for i in range(len(ytempback)):
+                                ytempback[i] = ytempback[i] - lastyback
+                                if ytempback[i] < 0:
+                                    ytempback[i] = 0
+                            
+
+
                         
-
-
-                    
-                        if 'forward' in segment:
-                            info.append(go.Scatter(x=xtemp, y=ytemp, showlegend=False, line=test.availablecolors[n]))
-                        if 'backward' in segment:
-                            info.append(go.Scatter(x=xtempback, y=ytempback, showlegend=False, line=test.availablecolors[n]))
-                n += 1
+                            if 'forward' in segment:
+                                info.append(go.Scatter(x=xtemp, y=ytemp, showlegend=False, line=test.availablecolors[n]))
+                            if 'backward' in segment:
+                                info.append(go.Scatter(x=xtempback, y=ytempback, showlegend=False, line=test.availablecolors[n]))
+                    n += 1
             
                     
       
@@ -661,6 +671,7 @@ def update_output(list_of_contents, sesid, list_of_names, list_of_dates, filetyp
     if list_of_contents is not None:
         if list_of_names[0].split('.')[-1] == 'zip':
             
+            
             for content, name, date in zip(list_of_contents, list_of_names, list_of_dates):
                 # the content needs to be split. It contains the type and the real content
                 content_type, content_string = content.split(',')
@@ -679,7 +690,7 @@ def update_output(list_of_contents, sesid, list_of_names, list_of_dates, filetyp
                         test.assignname(element)
                         for root, dirs, files in os.walk('apps/converted/' + sesid + '/' + element, topdown=False):
                             for name in files:
-                                print(os.path.join(root, name))
+                                #print(os.path.join(root, name))
                                 name = os.path.join(root, name)
                                 if  name.split('/')[2] != '' and name.split('/')[-1] != '.DS_Store':
                                     #do same thing but with objects and 2 lists
@@ -692,7 +703,7 @@ def update_output(list_of_contents, sesid, list_of_names, list_of_dates, filetyp
                                     if name.split('/')[-2] not in test.samples[name.split('/')[-3]].sets.keys():
                                         test.samples[name.split('/')[-3]].addset(name.split('/')[-2])
                                     if name.split('/')[-1] not in test.samples[name.split('/')[-3]].sets[name.split('/')[-2]].indents.keys():
-                                        print(filetype, 'this is filetype')
+                                        #print(filetype, 'this is filetype')
                                         test.samples[name.split('/')[-3]].sets[name.split('/')[-2]].addindent(name.split('/')[-1], None, name, filetype)
                                         test.segments = test.samples[name.split('/')[-3]].sets[name.split('/')[-2]].indents[name.split('/')[-1]].segments 
                                         #test.segments = test.samples[name.split('/')[-3]].sets[name.split('/')[-2]].indents[name.split('/')[-1]].segments              
@@ -707,12 +718,11 @@ def update_output(list_of_contents, sesid, list_of_names, list_of_dates, filetyp
                 x = 0
                 for name in zip_obj.namelist():
                     x+= 1
-                    print(x)
                     if name.split('.')[-1] == 'txt':
                         if name.split('/')[0] != '__MACOSX' and name.split('/')[2] != '' and name.split('/')[2] != '.DS_Store':
                             #do same thing but with objects and 2 lists
-                            print(name.split('/')[1])
-                            print(name, 'full name')
+                            #print(name.split('/')[1])
+                            #print(name, 'full name')
                             if name.split('/')[1] not in test.samples.keys():
                                 test.addsample(name.split('/')[1])
                             
@@ -720,13 +730,13 @@ def update_output(list_of_contents, sesid, list_of_names, list_of_dates, filetyp
                                 test.samples[name.split('/')[1]].addset(name.split('/')[2])
 
                             if name.split('/')[3] not in test.samples[name.split('/')[1]].sets[name.split('/')[2]].indents.keys():
-                                test.samples[name.split('/')[1]].sets[name.split('/')[2]].addindent(name.split('/')[3], zip_obj, name)
+                                test.samples[name.split('/')[1]].sets[name.split('/')[2]].addindent(name.split('/')[3], zip_obj, name, filetype)
                                 test.segments = test.samples[name.split('/')[1]].sets[name.split('/')[2]].indents[name.split('/')[3]].segments
-            
-            print(test.samples)
+                '''
+            #print(test.samples)
             #print(test.samples['Rubber'], test.samples['Rubber'].sets['Day2'].indents )
             #test.outputdata()
-            '''
+
             
 
         else:
@@ -929,7 +939,7 @@ def return_graph(value, segment, new, sesid):
     n = 0
     top = 100
     yaxismax = 1
-    tic1 = timeit.default_timer()
+    tic1 = time.process_time()
     if segment != []:
         for displaypaths in test.displaypaths:
             if displaypaths != []:
@@ -943,11 +953,13 @@ def return_graph(value, segment, new, sesid):
                 for indent in test.samples[samplename].sets[setname].indents.values():
                     if indent.name in filenames:
                         if 'forward' in segment:
-                            info.append(go.Scatter(x=indent.piezo[test.forwardseg], y=indent.load[test.forwardseg], name=indent.name, line=test.availablecolors[n], showlegend=False))
+                            info.append(go.Scattergl(x=indent.piezo[test.forwardseg], y=indent.load[test.forwardseg], name=indent.name, line=test.availablecolors[n], showlegend=False))
+                            '''
                             yaxismax = max(indent.load[test.forwardseg])
                             yaxismin = min(indent.load[test.forwardseg])
                             xaxismax = max(indent.piezo[test.forwardseg])
                             xaxismin = min(indent.piezo[test.forwardseg])
+                            '''
                             
                             #info.append(go.Scatter(x=indent.piezo[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]][0::10], y=indent.load[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]][0::10], name=indent.name, line=test.availablecolors[n], showlegend=False))
                             #top = max(indent.load[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]])
@@ -957,10 +969,11 @@ def return_graph(value, segment, new, sesid):
                         if 'backward' in segment:
                             #top = max(indent.load[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]])
                             #info.append(go.Scatter(x=indent.piezo[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]][0::10], y=indent.load[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]][0::10], name=indent.name, showlegend=False, line=test.availablecolors[n]))
+                            '''
                             tyaxismax = max(indent.load[test.backwardseg])
                             yaxismin = min(indent.load[test.backwardseg])
-                            xaxismax = max(indent.piezo[test.backwardseg])
                             xaxismin = min(indent.piezo[test.backwardseg])
+                            '''
                             info.append(go.Scatter(x=indent.piezo[test.backwardseg], y=indent.load[test.backwardseg], name=indent.name, showlegend=False, line=test.availablecolors[n]))
                             
 
@@ -974,13 +987,13 @@ def return_graph(value, segment, new, sesid):
                     info.append(go.Scattergl(x=list(range(int(xaxismin),int(xaxismax)))[0::10], y=np.full(int(xaxismax), (yaxismax/100)*value)[0::10], name='Threshold', showlegend=False, line = dict(color='#E44236')))
                     #info.append(go.Scattergl(x=list(range(0,10000))[0::10], y=np.full(10001, value/150)[0::10], name='Threshold', showlegend=False, line = dict(color='#E44236')))
                     
-        print('oi, oi')
+        #print('oi, oi')
         #fig = px.line(x =info, y = list(range(0,2000)))
-        print('done :-)')
+        #print('done :-)')
     
     #fig = go.Figure(data=info)
 
-    print('WE GOT HERE ******************')
+    #print('WE GOT HERE ******************')
     '''
     df = dict(x=[1,2,3,4,5],y=[1,2,3,4,5])
     fig = px.line(df, x='x', y="y", title='Life expectancy in Canada')
@@ -994,10 +1007,10 @@ def return_graph(value, segment, new, sesid):
         fig2 = px.line(df, x='x', y="y", title='La', render_mode='webgl')
         fig.add_trace(fig2.data[0])
     '''
-    toc1 = timeit.default_timer()
+    toc1 = time.process_time()
     print('Collecting data Time: ', toc1 - tic1)
 
-    tic2 = timeit.default_timer()
+    tic2 = time.process_time()
     fig = go.Figure(data=info)
     
 
@@ -1014,7 +1027,7 @@ def return_graph(value, segment, new, sesid):
         out = 0
     else:
         out = ((yaxismax/100)*value)
-    toc2 = timeit.default_timer()
+    toc2 = time.process_time()
 
     print('after fig', toc2-tic2)
 

@@ -157,14 +157,38 @@ class ConvertRangeAFM(ConvertFormat):
         self.raw_data = {'load': None, 'peizo': None, 'time': None}
         self.metadata = None
 
-    def loaddata(self, filepath):
-        dslist = afmformats.load_data(filepath)
-        fd = afmformats.afm_fdist.AFMForceDistance(dslist[0]._raw_data, dslist[0].metadata, diskcache=False)
-        self.raw_data['piezo'] = [fd.appr['height (piezo)']*1e9] + [fd.retr['height (piezo)']*1e9]
-        self.raw_data['load'] = [fd.appr['force']*1e9] + [fd.retr['force']*1e9]
-        self.raw_data['time'] = [fd.appr['time']] + [fd.retr['time']]
+    def loaddata(self, filepath, filetype):
+        if filetype == 'JPK Instruments':
+            dslist = afmformats.load_data(filepath)
+            fd = afmformats.afm_fdist.AFMForceDistance(dslist[0]._raw_data, dslist[0].metadata, diskcache=False)
+            print(dslist[0].columns)
+            self.raw_data['piezo'] = [fd.appr['height (piezo)']*1e9] + [fd.retr['height (piezo)']*1e9]
+            self.raw_data['load'] = [fd.appr['force']*1e9] + [fd.retr['force']*1e9]
+            self.raw_data['time'] = [fd.appr['time']] + [fd.retr['time']]
 
-        self.metadata = fd.metadata
+            self.metadata = fd.metadata
+        elif filetype == 'AFM workshop':
+            print(filetype)
+            dslist = afmformats.load_data(filepath)
+            fd = afmformats.afm_fdist.AFMForceDistance(dslist[0]._raw_data, dslist[0].metadata, diskcache=False)
+            print(dslist[0].columns)
+            print(dslist[0].column_units)
+            self.raw_data['piezo'] = [np.abs(fd.appr['height (measured)'])] + [np.abs(fd.retr['height (measured)'])]
+            self.raw_data['load'] = [fd.appr['force']] + [fd.retr['force']]
+            self.raw_data['time'] = [fd.appr['index']] + [fd.retr['index']]
+
+            self.metadata = fd.metadata
+        else:
+            print(filetype)
+            dslist = afmformats.load_data(filepath)
+            fd = afmformats.afm_fdist.AFMForceDistance(dslist[0]._raw_data, dslist[0].metadata, diskcache=False)
+            print(dslist[0].columns)
+            self.raw_data['piezo'] = [np.abs(fd.appr['height (measured)'])] + [np.abs(fd.retr['height (measured)'])]
+            self.raw_data['load'] = [fd.appr['force']] + [fd.retr['force']]
+            self.raw_data['time'] = [fd.appr['index']] + [fd.retr['index']]
+
+            self.metadata = fd.metadata            
+
         return self.raw_data, self.metadata
         
         

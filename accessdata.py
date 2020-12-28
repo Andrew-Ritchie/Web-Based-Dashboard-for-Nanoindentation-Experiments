@@ -50,6 +50,8 @@ class Experiment():
                     if indent.filtered == True:
                         outexperiment['metadata'] = {'tipradius' : (indent.tipradius*1000), 'cantileverk':indent.cantileverk}
                         outexperiment[self.name][sample.name][sets.name][indent.name] = {'time':indent.time[1], 'load':indent.load[1], 'piezo': indent.piezo[1]}
+                    else:
+                        print('hello OIOIOIOI')
         os.mkdir(sessionid)
         with open(sessionid + '/example.json','w') as f: 
             json.dump(outexperiment, f, indent=4) 
@@ -94,14 +96,14 @@ class Set():
     def addindent(self, name, zip_obj, filepath, afmformat):
         #self.indentnames.append(name)
         #self.indents.append(Rawdata(name, zipobject=zip_obj, files=filepath))
-        self.indents[name] = Rawdata(name, zipobject=zip_obj, files=filepath, afmformat=afmformat )
+        self.indents[name] = Rawdata(name, zipobject=zip_obj, files=filepath, fileformat=afmformat )
     
     
             
                 
 
 class Rawdata():
-    def __init__(self, name, zipobject=None, files=None, afmformat=None):
+    def __init__(self, name, zipobject=None, files=None, fileformat=None):
         self.zip_obj = zipobject
         self.file = files
         self.displayflag = False
@@ -130,12 +132,12 @@ class Rawdata():
         #self.convertdata()
         #print('hehehehehehehehehehehehehehehe')
         #print(afmformat, 'formmattt')
-        if afmformat == 'Optics11':
+        if fileformat == 'Optics11':
             self.loaddataoptics(converter.realdata(self.file))
             self.loadheader(converter.openrealfile(self.file))
         else:
-            self.loaddatafull(AFMformats.loaddata(self.file))
-        
+            self.loaddatafull(AFMformats.loaddata(self.file, fileformat))
+
 
 
      
@@ -145,7 +147,7 @@ class Rawdata():
         for line in self.zip_obj.open(self.file):
             data += line
         #print(data, 'IS BInary')
-        self.loaddata(converter.loaddata(data))
+        self.loaddataoptics(converter.loaddata(data))
         self.loadheader(converter.loadheader(data))
     
     
@@ -170,7 +172,8 @@ class Rawdata():
         self.piezo = raw_data['piezo']
         self.load = raw_data['load']
         metadata = fulldata[1]
-        self.cantileverk = metadata['spring constant']
+        print(metadata)
+        #self.cantileverk = metadata['spring constant']
         self.segments = len(self.load)
 
 
