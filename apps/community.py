@@ -7,12 +7,15 @@ from dash.exceptions import PreventUpdate
 import json
 import os
 import sys
+import subprocess
+import visdcc
+
 
 
 
 from dash.dependencies import Input, Output, State
 
-comments = [] 
+comments = []
 arguments = []
 outputs = []
 states = []
@@ -20,6 +23,27 @@ states = []
 indexglob = 0
 
 
+
+
+with open('postdb/data.json', 'r') as db:
+    data = json.load(db)
+    for element in data.keys():
+        for value in data[element].keys():
+            comments.append(Input('commentbutton' + str(indexglob), 'n_clicks'))
+            comments.append(Input('commenttext' + str(indexglob), 'value'))
+            arguments.append('click' + str(indexglob))
+            arguments.append('commenttext' + str(indexglob))
+            arguments.append('posttitle' + str(indexglob))
+            outputs.append(Output('commentarea' + str(indexglob), 'children'))
+            states.append(State('posttitle' + str(indexglob), 'children'))
+            states.append(State('commenttext' + str(indexglob), 'value'))
+            #states.append(State('commentarea' + str(indexglob), 'children'))
+            print(states)
+            print(indexglob)
+            indexglob += 1
+
+    arguments.append('username')
+    states.append(State('user', 'value'))
 
 SIDEBAR_STYLE = {
     'box-sizing':'border-box',
@@ -37,22 +61,22 @@ MAIN_STYLE = {
   'background-color': '#AFAFAF',
   'marign': '20%',
   'padding-bottom': '100%',
-  "maxHeight": "400px", 
+  "maxHeight": "400px",
   "overflow": "scroll"
 }
 sidebar = html.Div(
     [
         html.H2("Sidebar"),
-        
+
     ]
 )
 
 post = html.Div([
             html.H2("Thread"),
-            
-            
+
+
         ], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'})
-        
+
 
 
 mainfeed = []
@@ -83,13 +107,13 @@ selectfeature = html.Div([
 )
 def update_forward_dropdown(click, output2):
     print('HELLOOOOOOOOOOOO')
-    mainfeed = []   
+    mainfeed = []
     index2 = 0
     with open('postdb/data.json', 'r') as db:
         data = json.load(db)
         print(data)
     for element in data.keys():
-        for value in data[element].keys(): 
+        for value in data[element].keys():
             print(element, 'here we arererererererere')
             mainfeed.append(generatepost(element, value, list(data[element][value].keys())[0], index2, list(data[element][value].values())[0]))
             print(index2, 'indexx222')
@@ -115,8 +139,15 @@ def update_username(click):
         output = 'Username'
 
     return output
-
-
+'''
+@app.callback(
+    Output('javascript', 'run'),
+    [Input('post', 'n_clicks')])
+def refresh_button_clicked(clicks):
+    if clicks > 0:
+        return "location.reload();"
+    return ''
+'''
 @app.callback(
     Output('output2', 'children'),
     [Input('post', 'n_clicks')],
@@ -129,7 +160,7 @@ def update_postdb(clicks, title, user, text):
     if clicks != 0:
         print('hellomoto')
         dic = {'user54': {'Hello Everyone!':{'This is the post I have sent to the platfrom.' : ['andrewritchie98', 'Welcome!']}}}
-        
+
         with open('postdb/data.json', 'r') as db:
             data = json.load(db)
             print(data)
@@ -140,10 +171,12 @@ def update_postdb(clicks, title, user, text):
                 data[user].update({title: {text: {}}})
         post = {user: {title: {text : []}}}
         with open('postdb/data.json', 'w') as outfile:
-            json.dump(data, outfile) 
+            json.dump(data, outfile)
         os.execv(sys.executable, ['python'] + sys.argv)
+        #subprocess.call(["python", os.path.join(sys.path[0], __file__)] + sys.argv[1:])
+        #os.system('touch /var/www/euandrewritchie_eu_pythonanywhere_com_wsgi.py')
 
-        '''
+
         global indexglob
         global comments
         global arguments
@@ -159,14 +192,14 @@ def update_postdb(clicks, title, user, text):
         states.append(State('commenttext' + str(indexglob), 'value'))
         print('this is the index value used', indexglob)
         print(outputs, 'check this')
-        indexglob += 1 
+        indexglob += 1
 
-        loop(outputs)
 
         with open('postdb/data.json', 'w') as outfile:
-            json.dump(data, outfile) 
-        
-        y = 0 
+            json.dump(data, outfile)
+        return html.H4('Your post has been sucessfully uploaded, please refresh this page to see the results.')
+        '''
+        y = 0
         global comments
         global arguments
         global states
@@ -188,19 +221,19 @@ def update_postdb(clicks, title, user, text):
         print('this is y', y)
         y += 1
         with open('postdb/data.json', 'w') as outfile:
-            json.dump(data, outfile) 
+            json.dump(data, outfile)
         ''
         '''
-        
-        
- 
+
+
+
 
 
 
 
 
 def generatepost(user, title, text, index, comments2):
-    
+
 
     x = [
         html.Div([
@@ -238,7 +271,7 @@ def generatepost(user, title, text, index, comments2):
     states.append(State('posttitle' + str(index), 'children'))
     states.append(State('commenttext' + str(index), 'value'))
     print('this is the index value used', index)
-    print(outputs, 'these are the outputs') 
+    print(outputs, 'these are the outputs')
     '''
 
 
@@ -255,72 +288,94 @@ def postcomment(*arguments):
     print('did this happen'
 
 '''
-def loop(outn):
-    @app.callback(
-        outn,
-        comments,
-        states
-    )
-    def postcomment(*arguments):
-        print('did this happen')
-        print(arguments[:-1])
-        with open('postdb/data.json', 'r') as db:
-            data = json.load(db)
-        trigger = dash.callback_context.triggered[0]
-        print(trigger, 'this is trigger')
-        print(trigger['prop_id'].split('.')[0])
-        print(trigger['value'], 'this is trigger')
-        if trigger['value'] is not None:
-            #print(trigger['prop_id'].split('.')[0][:-1], 'this is the value mann')
-            if trigger['prop_id'].split('.')[0][:-1] == 'commentbutton':
-                num = trigger['prop_id'].split('.')[0][-1]
-                title = dash.callback_context.states['posttitle' + num + '.children']
-                print(dash.callback_context.states, 'these are the states')
-                print(title, 'testing')
-                output = []
-                postnum = 0
-                for value in data.keys():
-                    for element in data[value].keys():
-                        if element == title:
-                            '''
-                            print('found it!')
-                            print(element)
-                            print(data[value][element])
-                            print(data[value][element].values())
-                            foundvalue = data[value][element]
-                            '''
-                            coms = list(data[value][element].keys())[0]
-                            text = dash.callback_context.states['commenttext' + num +'.value']
-                            user = dash.callback_context.states['user.value']
-                            data[value][element][coms][text] = user
-                            
-                            output = []
-                            print(data[value][element][coms])
-                            
-                            for plaintext in data[value][element][coms].keys():
-                                output.append(html.P(data[value][element][coms][plaintext] + ': ' + plaintext))
-                #this is rewriting it for some reason
-                print(data, 'this is data')
-                with open('postdb/data.json', 'w') as outfile:
-                    json.dump(data, outfile)         
-                return [output]
-            else:
-                raise PreventUpdate            
-        else:
+@app.callback(
+    outputs,
+    comments,
+    states
+)
+def postcomment(*arguments):
+    print('did this happen')
+    print(arguments[:-1])
+    with open('postdb/data.json', 'r') as db:
+        data = json.load(db)
+    trigger = dash.callback_context.triggered[0]
+    print(trigger, 'this is trigger')
+    print(trigger['prop_id'].split('.')[0])
+    print(trigger['value'], 'this is trigger')
+    if trigger['value'] is not None:
+        #print(trigger['prop_id'].split('.')[0][:-1], 'this is the value mann')
+        if trigger['prop_id'].split('.')[0][:-1] == 'commentbutton':
+            num = trigger['prop_id'].split('.')[0][-1]
+            title = dash.callback_context.states['posttitle' + num + '.children']
+            print(dash.callback_context.states, 'these are the states')
+            print(title, 'testing')
+
             output = []
+
             for value in data.keys():
+                outputhtml = []
+                postnum = 0
                 for element in data[value].keys():
-                    outhtml = []
-                    coms = list(data[value][element].keys())[0]
-                    for plaintext in data[value][element][coms].keys():
-                        outhtml.append(html.P(data[value][element][coms][plaintext] + ': ' + plaintext))
-                    output.append(outhtml)
-                    print('value')
-            print(len(output)) 
-            print(dash.callback_context.inputs, 'these are the inputs')
-            #print(len([output, output]), 'is it this')
-            return output  
-            
+                    if element == title:
+                        '''
+                        print('found it!')
+                        print(element)
+                        print(data[value][element])
+                        print(data[value][element].values())
+                        foundvalue = data[value][element]
+                        '''
+                        coms = list(data[value][element].keys())[0]
+                        text = dash.callback_context.states['commenttext' + num +'.value']
+                        user = dash.callback_context.states['user.value']
+                        data[value][element][coms][text] = user
+
+
+                        print(data[value][element][coms])
+
+                        for plaintext in data[value][element][coms].keys():
+                            outputhtml.append(html.P(data[value][element][coms][plaintext] + ': ' + plaintext))
+                        output.append(outputhtml)
+                        postnum += 1
+                    else:
+                        outhtml = []
+                        coms = list(data[value][element].keys())[0]
+                        print(data[value][element])
+                        print(coms, 'this coe')
+                        coms2 = list(data[value][element].values())[0]
+
+                        print(coms2, 'this is coms 2')
+                        for c in coms2.keys():
+                            print(c)
+                            outhtml.append(html.P(data[value][element][coms][c] + ': ' + c))
+                        output.append(outhtml)
+                        postnum += 1
+                    print(postnum, 'postnu')
+
+
+
+            #this is rewriting it for some reason
+            print(data, 'this is data')
+            with open('postdb/data.json', 'w') as outfile:
+                json.dump(data, outfile)
+            print(len(output))
+            return output
+        else:
+            raise PreventUpdate
+    else:
+        output = []
+        for value in data.keys():
+            for element in data[value].keys():
+                outhtml = []
+                coms = list(data[value][element].keys())[0]
+                for plaintext in data[value][element][coms].keys():
+                    outhtml.append(html.P(data[value][element][coms][plaintext] + ': ' + plaintext))
+                output.append(outhtml)
+                print('value')
+        print(len(output))
+        print(dash.callback_context.inputs, 'these are the inputs')
+        #print(len([output, output]), 'is it this')
+        return output
+
 
 
 '''
@@ -332,34 +387,18 @@ else:
 '''
 
 
-    
-with open('postdb/data.json', 'r') as db:
-    data = json.load(db)
-    for element in data.keys():
-        for value in data[element].keys(): 
-            comments.append(Input('commentbutton' + str(indexglob), 'n_clicks'))
-            comments.append(Input('commenttext' + str(indexglob), 'value'))
-            arguments.append('click' + str(indexglob))
-            arguments.append('commenttext' + str(indexglob))
-            arguments.append('posttitle' + str(indexglob))
-            outputs.append(Output('commentarea' + str(indexglob), 'children'))
-            states.append(State('posttitle' + str(indexglob), 'children'))
-            states.append(State('commenttext' + str(indexglob), 'value'))
-            print(states)
-            print(indexglob)
-            indexglob += 1
-
-    arguments.append('username')
-    states.append(State('user', 'value'))
-
-run = loop(outputs)
 
 
 layout = html.Div([
     html.Div([
+        html.Div(id='commentarea2'),
+        #html.Button(id='commentbutton2'),
+        visdcc.Run_js('javascript'),
         selectfeature,
     ], style= SIDEBAR_STYLE),
-    
-    
+
+
     html.Div(id='mainfeed',children= [], style=MAIN_STYLE),
-])   
+])
+
+# callback
