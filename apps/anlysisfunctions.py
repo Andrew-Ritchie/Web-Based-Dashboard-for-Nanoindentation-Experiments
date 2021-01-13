@@ -58,6 +58,7 @@ class YoungsModulus:
         for value in range(cpindex, len(force)):
             indentation.append((displacement[value] - displacement[cpindex]) - ((force[value]/k) - (force[cpindex]/k)))
         
+        print(indentation)
         return indentation
     
     def fitHertz(self, indentation, force, cpindex, tipradius=8000, fit_indentation_value=300.0):
@@ -66,6 +67,7 @@ class YoungsModulus:
             return
         '''
         contactforce = np.array(force[cpindex:]) - force[cpindex]
+        print(contactforce, 'contact force')
         ind = np.array(indentation)
         seeds = [1000.0 / 1e9]
         try:

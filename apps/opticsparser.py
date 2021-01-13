@@ -159,7 +159,9 @@ class ConvertRangeAFM(ConvertFormat):
 
     def loaddata(self, filepath, filetype):
         if filetype == 'JPK Instruments':
+            print('got here woooo')
             dslist = afmformats.load_data(filepath)
+            print(dslist)
             fd = afmformats.afm_fdist.AFMForceDistance(dslist[0]._raw_data, dslist[0].metadata, diskcache=False)
             print(dslist[0].columns)
             self.raw_data['piezo'] = [fd.appr['height (piezo)']*1e9] + [fd.retr['height (piezo)']*1e9]
@@ -167,8 +169,12 @@ class ConvertRangeAFM(ConvertFormat):
             self.raw_data['time'] = [fd.appr['time']] + [fd.retr['time']]
 
             self.metadata = fd.metadata
+            print(self.metadata)
         elif filetype == 'AFM workshop':
             print(filetype)
+            testing = afmformats.fmt_jpk.load_jpk(filepath)
+            print(testing)
+
             dslist = afmformats.load_data(filepath)
             fd = afmformats.afm_fdist.AFMForceDistance(dslist[0]._raw_data, dslist[0].metadata, diskcache=False)
             print(dslist[0].columns)

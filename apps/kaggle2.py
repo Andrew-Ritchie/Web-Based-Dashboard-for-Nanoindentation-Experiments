@@ -48,13 +48,26 @@ class KaggleAPI():
         datalist = subprocess.getoutput("kaggle datasets list -s AFM").split('\n')
 
         mydatalist = subprocess.getoutput("kaggle datasets list -m").split('\n')
+
+        '''
+        print(datalist)
         for element in mydatalist:
             if element not in datalist:
                 datalist.append(element)
-    
+        '''
+
         available_datasets = []
         for element in datalist[3:]:
             available_datasets.append(' '.join(s for s in element.split(' ') if s).split(' '))
+        
+        myavailable_datasets = []
+        for element in mydatalist[3:]:
+            myavailable_datasets.append(' '.join(s for s in element.split(' ') if s).split(' '))
+
+        for element in myavailable_datasets:
+            if element not in available_datasets:
+                available_datasets.append(element)
+
         print(available_datasets, 'test')
         return available_datasets
 

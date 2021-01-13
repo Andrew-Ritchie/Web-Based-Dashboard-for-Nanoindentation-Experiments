@@ -215,7 +215,7 @@ def pushdataview(clicks, username, selecteddata, rawdata):
     print(rawdata, 'rawdata')
     if clicks != 0:
         datasets.download_data(selecteddata.split('*')[0], username) 
-        overview = process.getsets('andrewritchie98')
+        overview = process.getsets(username)
         expname = list(overview.keys())[0]
         samples = overview[expname].keys()
         output = []
@@ -278,10 +278,21 @@ def sample2button(n_clicks, options):
 
 #---------------------------------------------------------------------------------------------------------------------------------------
 
-workflow = html.Div(children = [
-    html.H2("Workflow", style={'text-align': 'center'}),
+workflow = html.Div([
+    html.H2("Resolution", style={'text-align': 'center'}),
+    dcc.RadioItems(
+    id='resolution',
+    options=[
+        {'label': 'Full', 'value': 'full'},
+        {'label': 'Reduced', 'value': 'reduced'},
+    ],
+    labelStyle={'display': 'block', 'margin':'0%'},
+    value='reduced', 
+    style={'width': '100%', 'margin-left': '1%', 'padding':'0%'}),
+
+    html.Br(),
     
-    
+
 ], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black'})
 
 
@@ -307,8 +318,15 @@ indentation = html.Div(id='indentationdiv', children=[
                   style={'float':'left', 'width':'65%', 'padding':'1%', 'bgcolor': 'black'}, 
                   config={'displayModeBar':False},
                   ),
-            
-            html.Div([
+            html.Div([     
+            html.P('Indentation Fit Value', style={'text-indent':'0'}),
+            dcc.Input(
+                    id="indentationvalue", type="number",
+                    debounce=True, placeholder="Debounce True", value= 1500,
+                    style={'float':'left', 'indent':'0' }
+                ),
+            ]),
+            html.Div(id='fitv', children=[
                 html.Br(),
                 html.H1(' '),
             ])
@@ -319,11 +337,13 @@ indentation = html.Div(id='indentationdiv', children=[
 @app.callback(
     dash.dependencies.Output('calindentation', 'figure'),
     [dash.dependencies.Input("selectedfeatures", "value"),
-     dash.dependencies.Input("currentusername", "value")],
+     dash.dependencies.Input("currentusername", "value"),
+     dash.dependencies.Input("indentationvalue", "value")],
     [dash.dependencies.State("cpindexes", "data"),
-     dash.dependencies.State("savgoldata", "data")]
+     dash.dependencies.State("savgoldata", "data"),
+     dash.dependencies.State("resolution", "value")]
 )
-def indentationoutput(value, username, cpindexes, data):
+def indentationoutput(value, username, indentationvalue, cpindexes, data, resolution):
     print(data.keys(), 'this is data keys')
     print(cpindexes, 'this is indexes')
     raw_data = process.uploadrawdata(username)
@@ -340,7 +360,7 @@ def indentationoutput(value, username, cpindexes, data):
                 # Eeff = E*1.0e9 #to convert E in GPa to keep consistency with the units nm and nN
                 return (4.0 / 3.0) * (E / (1 - poisson ** 2)) * np.sqrt(R * x ** 3)
 
-    fit_indentation_value = 1500.0
+    fit_indentation_value = indentationvalue
     indmax = float(fit_indentation_value)
     
     for element in data.keys():
@@ -354,8 +374,10 @@ def indentationoutput(value, username, cpindexes, data):
             
             contactforce = np.array(data[element][indent][cpindexes[element][indent]:]) - data[element][indent][cpindexes[element][indent]]
             
-            
-            info.append(go.Scattergl(x=indentation_array, y=contactforce, line = availablecolors[index], name = indent, showlegend=False))
+            if resolution == 'reduced':
+                info.append(go.Scattergl(x=indentation_array[0::10], y=contactforce[0::10], line = availablecolors[index], name = indent, showlegend=False))
+            else:
+                info.append(go.Scattergl(x=indentation_array, y=contactforce, line = availablecolors[index], name = indent, showlegend=False))
 
             ind = np.array(indentation_array)
             jj = np.argmin((ind-indmax)**2)
@@ -396,7 +418,7 @@ filter1 = html.Div(id='savgol', children=[
     dash.dependencies.Input("savgolzwin", "value"),
     dash.dependencies.Input("currentusername", "value"),
     dash.dependencies.Input("sample1", "value"),
-    dash.dependencies.Input("sample2", "value")],)
+    dash.dependencies.Input("sample2", "value")])
 def savgol(order, win, username, sample1, sample2):
     raw_data = process.uploadrawdata(username)
     #selected_data = sample1 + sample2
@@ -406,21 +428,24 @@ def savgol(order, win, username, sample1, sample2):
         selected_data = sample1
     data = {}
     for datapath in selected_data:
+        print(datapath)
         expname = datapath.split('/')[0]
         sample = datapath.split('/')[1]
         sets = datapath.split('/')[2]
         for indent in list(raw_data[expname][sample][sets].keys()):
             force = filters.savgol(raw_data[expname][sample][sets][indent]['load'], raw_data[expname][sample][sets][indent]['piezo'] )
             if datapath in data.keys():
+                print('is this ture')
                 data[datapath][indent] = force
             else:
                 data[datapath] = {}
-    print(data)
+                data[datapath][indent] = force
+    print(data, 'this is our filtered data')
     return data
     
 elasticmod = html.Div(id='elasticmod', children=[
             html.H2("Elastic Modulus"),
-            dcc.Input(id="savgolzwin", type="number", value=0),
+            #dcc.Input(id="savgolzwin", type="number", value=0),
             dcc.Graph(id='elasticmodgraph',
                   style={'float':'left', 'width':'65%', 'padding':'1%', 'bgcolor': 'black'}, 
                   config={'displayModeBar':False},
@@ -477,6 +502,8 @@ def youngs(value, username, cpindexes, data):
         sample = element.split('/')[1]
         sets = element.split('/')[2]
         for indent in list(cpindexes[element].keys()):
+            print(cpindexes[element][indent], 'cp indexesssss')
+            print(cantileverk, 'this is k value')
             indentation_array = YM.calculate_indentation(data[element][indent], raw_data[expname][sample][sets][indent]['piezo'], cpindexes[element][indent], cantileverk)
             elasticity = YM.fitHertz(indentation_array, data[element][indent], cpindexes[element][indent], tipradius, fit_indentation_value=300)
             caldata[indent] = elasticity
@@ -543,9 +570,10 @@ inspect = html.Div([
      dash.dependencies.Input("fthreshold", "value"),
      dash.dependencies.Input("deltax", "value"),
      dash.dependencies.Input("selectedfeatures", "value")],
-    [dash.dependencies.State("savgoldata", "data")]
+    [dash.dependencies.State("savgoldata", "data"),
+    dash.dependencies.State("resolution", "value")]
 )
-def data(value, username, test, sample1, sample2, athreshold, fthreshold, deltax, order, filter1):
+def data(value, username, test, sample1, sample2, athreshold, fthreshold, deltax, order, filter1, resolution):
     #print(data)
     print(deltax, 'delta')
     print(order)
@@ -565,7 +593,12 @@ def data(value, username, test, sample1, sample2, athreshold, fthreshold, deltax
             sets = element.split('/')[2]
             cpindexes[element] = {}
             for indent in list(outdata[element].keys()):
-                info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'], y=outdata[element][indent], line = availablecolors[index], name = indent, showlegend=False))
+                print('fired!!!!')
+                if resolution == 'reduced':
+                    info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'][0::10], y=outdata[element][indent][0::10], line = availablecolors[index], name = indent, showlegend=False))
+                else:
+                    info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'], y=outdata[element][indent], line = availablecolors[index], name = indent, showlegend=False))
+
                 cp = cpfunctions.calculate(outdata[element][indent], raw_data[expname][sample][sets][indent]['piezo'], athreshold, fthreshold, deltax)
                 if cp is not None: 
                     info.append(go.Scattergl(mode='markers', x=[cp[0]], y=[cp[1]], showlegend=False, marker=dict(color='black', size=10)))
@@ -587,8 +620,12 @@ def data(value, username, test, sample1, sample2, athreshold, fthreshold, deltax
             expname = datapath.split('/')[0]
             sample = datapath.split('/')[1]
             sets = datapath.split('/')[2]
-            for indent in list(raw_data[expname][sample][sets].keys()):                
-                info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'], y=raw_data[expname][sample][sets][indent]['load'], line = availablecolors[index], name = indent, showlegend=False))
+            for indent in list(raw_data[expname][sample][sets].keys()):
+                if resolution == 'reduced':                
+                    info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'][0::10], y=raw_data[expname][sample][sets][indent]['load'][0::10], line = availablecolors[index], name = indent, showlegend=False))
+                else:
+                    info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'], y=raw_data[expname][sample][sets][indent]['load'], line = availablecolors[index], name = indent, showlegend=False))
+
                 cp = cpfunctions.calculate(raw_data[expname][sample][sets][indent]['load'], raw_data[expname][sample][sets][indent]['piezo'], athreshold, fthreshold, deltax)
                 info.append(go.Scattergl(mode='markers', x=[cp[0]], y=[cp[1]], showlegend=False, marker=dict(color='black', size=10)))
             index += 1
@@ -639,8 +676,9 @@ overcp = html.Div([
      [dash.dependencies.Input("currentusername", "value"),
      dash.dependencies.Input("sample1", "value"),
      dash.dependencies.Input("sample2", "value")],
+     dash.dependencies.State("resolution", "value"),
      )
-def overviewgraph(username, sample1, sample2):
+def overviewgraph(username, sample1, sample2, resolution):
     raw_data = process.uploadrawdata(username)
     selected_data = sample1
     info = []
@@ -650,8 +688,12 @@ def overviewgraph(username, sample1, sample2):
         expname = datapath.split('/')[0]
         sample = datapath.split('/')[1]
         sets = datapath.split('/')[2]
-        for indent in list(raw_data[expname][sample][sets].keys()):                
-            info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'][0::10], y=raw_data[expname][sample][sets][indent]['load'][0::10], line = availablecolors[index], name = indent, showlegend=False))            
+        for indent in list(raw_data[expname][sample][sets].keys()):       
+            if resolution == 'reduced':         
+                info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'][0::10], y=raw_data[expname][sample][sets][indent]['load'][0::10], line = availablecolors[index], name = indent, showlegend=False))            
+            else:
+                info.append(go.Scattergl(x=raw_data[expname][sample][sets][indent]['piezo'], y=raw_data[expname][sample][sets][indent]['load'], line = availablecolors[index], name = indent, showlegend=False))            
+        
         index += 1
 
     fig = go.Figure(data=info)
@@ -673,8 +715,9 @@ def overviewgraph(username, sample1, sample2):
      dash.dependencies.Input('delta', 'value'),
      dash.dependencies.Input('athresh', 'value'),
      dash.dependencies.Input('fthresh', 'value')],
-     [dash.dependencies.State('overcurves', 'figure')])
-def cpgraph(click_data, username, delta, athresh, fthresh, figure):
+     [dash.dependencies.State('overcurves', 'figure'),
+     dash.dependencies.State('resolution', 'value')])
+def cpgraph(click_data, username, delta, athresh, fthresh, figure, resolution):
     print(delta)
     raw_data = process.uploadrawdata(username)
     info = []
@@ -683,7 +726,11 @@ def cpgraph(click_data, username, delta, athresh, fthresh, figure):
         curve_number = click_data['points'][0]['curveNumber']
         trace_name = figure['data'][curve_number]['name']
         print(trace_name)
-        info.append(go.Scattergl(x=figure['data'][curve_number]['x'], y=figure['data'][curve_number]['y'], line = dict(color='#2ecc72',width=1), name = trace_name, showlegend=False))
+        if resolution == 'reduced':
+            info.append(go.Scattergl(x=figure['data'][curve_number]['x'][0::10], y=figure['data'][curve_number]['y'][0::10], line = dict(color='#2ecc72',width=1), name = trace_name, showlegend=False))
+        else:
+            info.append(go.Scattergl(x=figure['data'][curve_number]['x'], y=figure['data'][curve_number]['y'], line = dict(color='#2ecc72',width=1), name = trace_name, showlegend=False))
+
         cp = cpfunctions.calculate(figure['data'][curve_number]['y'], figure['data'][curve_number]['x'], float(athresh), float(fthresh), float(delta))
         print(cp, 'this is CP')
         info.append(go.Scattergl(mode='markers', x=[cp[0]], y=[cp[1]], showlegend=False, marker=dict(color='black', size=10)))

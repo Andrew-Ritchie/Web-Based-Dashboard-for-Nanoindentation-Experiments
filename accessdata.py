@@ -1,7 +1,9 @@
 import json
 import os
+import numpy as np
 from apps.opticsparser import ConvertOptics
 from apps.opticsparser import ConvertRangeAFM
+
 
 converter = ConvertOptics()
 AFMformats = ConvertRangeAFM()
@@ -41,7 +43,7 @@ class Experiment():
 
     def outputdata(self, sessionid):
         outexperiment = {self.name: {}}
-        
+        print(self.forwardseg, 'this is name')
         for sample in self.samples.values():
             outexperiment[self.name][sample.name] = {}
             for sets in sample.sets.values():
@@ -49,9 +51,11 @@ class Experiment():
                 for indent in sets.indents.values():
                     if indent.filtered == True:
                         outexperiment['metadata'] = {'tipradius' : (indent.tipradius*1000), 'cantileverk':indent.cantileverk}
-                        outexperiment[self.name][sample.name][sets.name][indent.name] = {'time':indent.time[1], 'load':indent.load[1], 'piezo': indent.piezo[1]}
-                    else:
-                        print('hello OIOIOIOI')
+                        if type(indent.time[0]) is np.ndarray:
+                            outexperiment[self.name][sample.name][sets.name][indent.name] = {'time':indent.time[self.forwardseg].tolist(), 'load':indent.load[self.forwardseg].tolist(), 'piezo': np.flip(indent.piezo[self.forwardseg]).tolist()}
+                        else:
+                            outexperiment[self.name][sample.name][sets.name][indent.name] = {'time':indent.time[self.forwardseg], 'load':indent.load[self.forwardseg], 'piezo': indent.piezo[self.forwardseg]}
+
         os.mkdir(sessionid)
         with open(sessionid + '/example.json','w') as f: 
             json.dump(outexperiment, f, indent=4) 
@@ -191,6 +195,8 @@ class Rawdata():
         self.time = [self.time[segi[0]:segi[1]]] + [self.time[segi[1]:segi[2]]] + [self.time[segi[2]:segi[3]]] + [self.time[segi[3]:segi[4]]] + [self.time[segi[4]:segi[5]]] 
         self.load = [self.load[segi[0]:segi[1]]] + [self.load[segi[1]:segi[2]]] + [self.load[segi[2]:segi[3]]] + [self.load[segi[3]:segi[4]]] + [self.load[segi[4]:segi[5]]] 
         self.segments = len(self.load)
+
+        print(len(self.piezo[1]), 'this is the length')
 
     def assignforward(self, forward):
         self.forwardsegment = forward

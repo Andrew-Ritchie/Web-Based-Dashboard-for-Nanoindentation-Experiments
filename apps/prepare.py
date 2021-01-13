@@ -91,8 +91,8 @@ uploadarea = html.Div([
     options=[
         {'label': 'Optics11', 'value': 'Optics11'},
         {'label': 'JPK Instruments', 'value': 'JPK Instruments'},
-        {'label': 'AFM workshop', 'value': 'AFM workshop'},
-        {'label': 'Asylum Research', 'value': 'Asylum Research'},
+        #{'label': 'AFM workshop', 'value': 'AFM workshop'},
+        #{'label': 'Asylum Research', 'value': 'Asylum Research'},
     ],
     labelStyle={'display': 'block', 'margin':'0%'},
     value='Optics11',
@@ -119,18 +119,25 @@ uploadarea = html.Div([
         # Allow multiple files to be uploaded
         multiple=True
     ),
-    '''
-    dcc.Loading(
-            id="loading-1",
-            type="default",
-            children=html.Div(id="loading-output-1")
+
+
+], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
+
+thresholdfilter = html.Div([
+    html.H2("Automatic Filter", style={'text-align': 'center'}),
+    html.Div([
+        dcc.Input(
+            id="filtervalue", type="number",
+            debounce=True, placeholder="Debounce True", value= 100,
+            style={'float':'left',  }
     ),
-    dcc.Loading(
-            id="loading-2",
-            type="default",
-            children=html.Div(id="loading-output-2")
-    ),
-    '''
+    html.P('nN', style={'float':'left'})
+    ]),
+    html.Br(),
+    html.Div([]),
+
+    html.Br(),
+    
 
 ], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
 
@@ -145,8 +152,81 @@ selectexperiment = html.Div([
 ], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black', "maxHeight": "400px", "overflow": "scroll"})
 
 
+metadata = html.Div([
+    html.H2("Metadata", style={'text-align': 'center'}),
+    html.Div(id='metaoutput'),
+
+    html.Br(),
+    
+
+], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
+
+
+@app.callback(
+    dash.dependencies.Output('metaoutput', 'children'),
+    [dash.dependencies.Input("filetype", "value")]
+)
+def getmetadatavalues(filetype):
+    if filetype != 'Optics11':
+        return html.Div([
+            html.P('Please enter the following metadata values, as these are not provided by JPK files.'),
+            html.P('Tip Radius'),
+            html.Div([
+                dcc.Input(
+                    id="tiprad", type="number",
+                    debounce=True, placeholder="Debounce True", value= 10,
+                    style={'float':'left',  }
+                ),
+                html.P('um', style={'float':'left'})
+            ]),
+            html.Div([
+                html.P('Cantilever K', style={"clear":"both"}),
+            ]),
+            html.Div([
+                dcc.Input(
+                    id="cantiliver", type="number",
+                    debounce=True, placeholder="Debounce True", value= 0.51,
+                    style={'float':'left',  }
+                ),
+                html.P('Nm', style={'float':'left'})
+            ]),
+            html.Br(),
+            html.Div(id='update')
+            ])
+    else:
+        return html.P('No metadata values required as these are all provided by Optics11.')
+
+@app.callback(
+    dash.dependencies.Output('update', 'children'),
+    [dash.dependencies.Input("tiprad", "value"),
+    dash.dependencies.Input("cantiliver", "value"),
+    dash.dependencies.Input('sessionid', 'children'),
+    dash.dependencies.Input("dataoverview", "n_clicks")]
+)
+def updatemetavalues(tiprad, cantileverk, sesid, clicks):
+    if clicks != 0:
+        exp = db.exps[sesid]
+        for sample in exp.samples.values():
+                for sets in sample.sets.values():
+                    for indent in sets.indents.values():
+                        indent.tipradius = tiprad
+                        indent.cantileverk = cantileverk
+
+
+
+
 selectfeature = html.Div([
-    html.H2("Features", style={'text-align': 'center'}),
+    html.H2("Resolution", style={'text-align': 'center'}),
+    dcc.RadioItems(
+    id='res',
+    options=[
+        {'label': 'Full', 'value': 'full'},
+        {'label': 'Reduced', 'value': 'reduced'},
+    ],
+    labelStyle={'display': 'block', 'margin':'0%'},
+    value='reduced', 
+    style={'width': '100%', 'margin-left': '1%', 'padding':'0%'}),
+
     html.Br(),
     
 
@@ -166,6 +246,8 @@ layout = html.Div([
     html.Div([
         uploadarea,
         selectexperiment,
+        metadata,
+        thresholdfilter,
         selectfeature,
     ], style= SIDEBAR_STYLE),
     
@@ -563,6 +645,7 @@ def display_click_data(click_data, sesid, figure):
                             curve_name = path[2]
                             pathfound = True
         outvalue = str(dataset.samples[sample_name].sets[set_name].indents[curve_name].filtered)
+        print(outvalue, 'this is out value ')
         return html.P(trace_name), outvalue
     return None, None
 
@@ -692,21 +775,23 @@ def update_output(list_of_contents, sesid, list_of_names, list_of_dates, filetyp
                             for name in files:
                                 #print(os.path.join(root, name))
                                 name = os.path.join(root, name)
-                                if  name.split('/')[2] != '' and name.split('/')[-1] != '.DS_Store':
-                                    #do same thing but with objects and 2 lists
-                                    #print(name.split('/')[-3])
-                                    #print(name, 'full name')
-                                    
-                                    if name.split('/')[-3] not in test.samples.keys():
-                                        test.addsample(name.split('/')[-3])
-                                    
-                                    if name.split('/')[-2] not in test.samples[name.split('/')[-3]].sets.keys():
-                                        test.samples[name.split('/')[-3]].addset(name.split('/')[-2])
-                                    if name.split('/')[-1] not in test.samples[name.split('/')[-3]].sets[name.split('/')[-2]].indents.keys():
-                                        #print(filetype, 'this is filetype')
-                                        test.samples[name.split('/')[-3]].sets[name.split('/')[-2]].addindent(name.split('/')[-1], None, name, filetype)
-                                        test.segments = test.samples[name.split('/')[-3]].sets[name.split('/')[-2]].indents[name.split('/')[-1]].segments 
-                                        #test.segments = test.samples[name.split('/')[-3]].sets[name.split('/')[-2]].indents[name.split('/')[-1]].segments              
+                                print(name, 'this is name')
+                                if name.split('.')[-1] == 'txt' or name.split('.')[-1] == 'jpk-force':
+                                    if  name.split('/')[2] != '' and name.split('/')[-1] != '.DS_Store':
+                                        #do same thing but with objects and 2 lists
+                                        #print(name.split('/')[-3])
+                                        #print(name, 'full name')
+                                        
+                                        if name.split('/')[-3] not in test.samples.keys():
+                                            test.addsample(name.split('/')[-3])
+                                        
+                                        if name.split('/')[-2] not in test.samples[name.split('/')[-3]].sets.keys():
+                                            test.samples[name.split('/')[-3]].addset(name.split('/')[-2])
+                                        if name.split('/')[-1] not in test.samples[name.split('/')[-3]].sets[name.split('/')[-2]].indents.keys():
+                                            #print(filetype, 'this is filetype')
+                                            test.samples[name.split('/')[-3]].sets[name.split('/')[-2]].addindent(name.split('/')[-1], None, name, filetype)
+                                            test.segments = test.samples[name.split('/')[-3]].sets[name.split('/')[-2]].indents[name.split('/')[-1]].segments 
+                                            #test.segments = test.samples[name.split('/')[-3]].sets[name.split('/')[-2]].indents[name.split('/')[-1]].segments              
                 shutil.rmtree('apps/converted/' + sesid + '/')
                         
                 #return html.P('hello')                           
@@ -929,9 +1014,11 @@ prev = None
     [Input("slider", 'value'),
     Input('segmentselector', 'value'),
     Input('select-experiment', 'n_clicks'),
-    Input('sessionid', 'children')]
+    Input('sessionid', 'children'),
+    Input('res', 'value'),
+    Input('filtervalue', 'value')]
 )
-def return_graph(value, segment, new, sesid):
+def return_graph(value, segment, new, sesid, resolution, filtervalue):
     print('this is sesid', sesid)
     test = db.exps[sesid]
     print(new, 'test here')  
@@ -953,64 +1040,51 @@ def return_graph(value, segment, new, sesid):
                 for indent in test.samples[samplename].sets[setname].indents.values():
                     if indent.name in filenames:
                         if 'forward' in segment:
-                            info.append(go.Scattergl(x=indent.piezo[test.forwardseg], y=indent.load[test.forwardseg], name=indent.name, line=test.availablecolors[n], showlegend=False))
-                            '''
+                            if resolution == 'reduced':
+                                info.append(go.Scattergl(x=indent.piezo[test.forwardseg][0::10], y=indent.load[test.forwardseg][0::10], name=indent.name, line=test.availablecolors[n], showlegend=False))
+                                print('reduced reg is up')
+                            else:
+                                info.append(go.Scattergl(x=indent.piezo[test.forwardseg], y=indent.load[test.forwardseg], name=indent.name, line=test.availablecolors[n], showlegend=False))
+                            
                             yaxismax = max(indent.load[test.forwardseg])
                             yaxismin = min(indent.load[test.forwardseg])
                             xaxismax = max(indent.piezo[test.forwardseg])
                             xaxismin = min(indent.piezo[test.forwardseg])
-                            '''
                             
-                            #info.append(go.Scatter(x=indent.piezo[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]][0::10], y=indent.load[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]][0::10], name=indent.name, line=test.availablecolors[n], showlegend=False))
-                            #top = max(indent.load[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]])
-                            #info.append(indent.load[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]])
-                            #x = indent.piezo[test.segments[test.forwardseg[0]]:test.segments[test.forwardseg[1]]]
+                            print(filtervalue, 'filtered value ')
+                            print(yaxismax, 'max')
+
+                            if filtervalue > yaxismax:
+                                indent.filtered = False
+                            else:
+                                indent.filtered = True
+
+                            
+                            
 
                         if 'backward' in segment:
-                            #top = max(indent.load[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]])
-                            #info.append(go.Scatter(x=indent.piezo[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]][0::10], y=indent.load[test.segments[test.backwardseg[0]]:test.segments[test.backwardseg[1]]][0::10], name=indent.name, showlegend=False, line=test.availablecolors[n]))
-                            '''
-                            tyaxismax = max(indent.load[test.backwardseg])
+                            
+                            yaxismax = max(indent.load[test.backwardseg])
                             yaxismin = min(indent.load[test.backwardseg])
                             xaxismin = min(indent.piezo[test.backwardseg])
-                            '''
-                            info.append(go.Scatter(x=indent.piezo[test.backwardseg], y=indent.load[test.backwardseg], name=indent.name, showlegend=False, line=test.availablecolors[n]))
+                            xaxismax = max(indent.piezo[test.backwardseg])
                             
+                            if resolution == 'reduced':
+                                info.append(go.Scatter(x=indent.piezo[test.backwardseg][0::10], y=indent.load[test.backwardseg][0::10], name=indent.name, showlegend=False, line=test.availablecolors[n]))
+                            else:
+                                info.append(go.Scatter(x=indent.piezo[test.backwardseg], y=indent.load[test.backwardseg], name=indent.name, showlegend=False, line=test.availablecolors[n]))
+                            
+                            if filtervalue > yaxismax:
+                                indent.filtered = False
+                            else:
+                                indent.filtered = True
 
                 n+=1 
 
-                if value is not None:
-                    print(value, 'VALLUUE')
-                    print(top)
-                    print(int(yaxismin))
-                    
+                if value is not None:                    
                     info.append(go.Scattergl(x=list(range(int(xaxismin),int(xaxismax)))[0::10], y=np.full(int(xaxismax), (yaxismax/100)*value)[0::10], name='Threshold', showlegend=False, line = dict(color='#E44236')))
-                    #info.append(go.Scattergl(x=list(range(0,10000))[0::10], y=np.full(10001, value/150)[0::10], name='Threshold', showlegend=False, line = dict(color='#E44236')))
-                    
-        #print('oi, oi')
-        #fig = px.line(x =info, y = list(range(0,2000)))
-        #print('done :-)')
-    
-    #fig = go.Figure(data=info)
+                                        
 
-    #print('WE GOT HERE ******************')
-    '''
-    df = dict(x=[1,2,3,4,5],y=[1,2,3,4,5])
-    fig = px.line(df, x='x', y="y", title='Life expectancy in Canada')
-    N = 200
-    x = np.random.randn(N)
-    y = np.random.randn(N)
-    tic=timeit.default_timer()
-    info = []
-    for i in range(0,100):
-        df = dict(x=x,y=y)
-        fig2 = px.line(df, x='x', y="y", title='La', render_mode='webgl')
-        fig.add_trace(fig2.data[0])
-    '''
-    toc1 = time.process_time()
-    print('Collecting data Time: ', toc1 - tic1)
-
-    tic2 = time.process_time()
     fig = go.Figure(data=info)
     
 
@@ -1021,14 +1095,11 @@ def return_graph(value, segment, new, sesid):
         plot_bgcolor='#DDDDDD',
         paper_bgcolor='#DDDDDD',
     )
-    #toc=timeit.default_timer()
-    #print('Data Points: ', N, '/ TIME: ', toc - tic)
+
     if value is None:
         out = 0
     else:
         out = ((yaxismax/100)*value)
-    toc2 = time.process_time()
 
-    print('after fig', toc2-tic2)
 
     return fig, out
