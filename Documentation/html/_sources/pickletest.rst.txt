@@ -1,0 +1,7 @@
+pickletest module
+=================
+
+.. automodule:: pickletest
+   :members:
+   :undoc-members:
+   :show-inheritance:
