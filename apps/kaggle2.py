@@ -28,6 +28,15 @@ class KaggleAPI():
     
     #Assign the API details for current user and set up enviroment varibles 
     def assign_details(self, username, key):
+        """
+        assigns the users Kaggle credentials to communicate with Kaggle
+
+        :type username: string
+        :param username: the Kaggle username of the active user
+
+        :type key: string
+        :param key: the Kaggle key of the active user
+        """
         self.username = username
         self.key = key
 
@@ -43,6 +52,10 @@ class KaggleAPI():
 
     #This method requires names to have no spaces to work without global varibles, this should be returned into a div
     def get_datasets(self):
+        """
+        Returns the available datasets stored on Kaggle
+
+        """
         #os.system("kaggle datasets download andrewritchie98/afmapplicationtest")
         #print(subprocess.getoutput("kaggle datasets list -m"))
         datalist = subprocess.getoutput("kaggle datasets list -s AFM").split('\n')
@@ -73,13 +86,39 @@ class KaggleAPI():
 
 
     def download_data(self, dataset, username):
+        """
+        returns the dataset selected by the user from Kaggle
+
+        :type dataset: string
+        :param dataset: dataset selected by the user
+
+        :type username: string
+        :param username: the Kaggle username of the active user
+        """
         if username in os.listdir("kaggledatasets/"):
             shutil.rmtree("kaggledatasets/" + os.environ['KAGGLE_USERNAME'])
         #once implementated use -q to make it quiet
         os.system("kaggle datasets download -p kaggledatasets/" + os.environ['KAGGLE_USERNAME'] + "/ --unzip " + dataset)
 
     def upload_dataset(self, path, title, slug, username, privateorpublic):
+        """
+        uploads users dataset to Kaggle
 
+        :type path: string
+        :param path: path to the users dataset
+
+        :type title: string
+        :param title: title of the dataset
+
+        :type title: slug
+        :param title: the slug used to identify datasets stored on Kaggles servers
+
+        :type username: string
+        :param username: the Kaggle username of the active user
+
+        :type privateorpublic: string
+        :param privateorpublic: indicates if the dataset is public or private
+        """
         os.system("kaggle datasets init -p " + path)
         self.edit_metadata(path, title, slug, username)
         if privateorpublic == 'public':
@@ -95,6 +134,21 @@ class KaggleAPI():
 
     
     def edit_metadata(self, path, title, slug, username):
+        """
+        lets the user edit datasets metadata before uploading to Kaggle
+
+        :type path: string
+        :param path: path to the users dataset
+
+        :type title: string
+        :param title: title of the dataset
+
+        :type title: slug
+        :param title: the slug used to identify datasets stored on Kaggles servers
+
+        :type username: string
+        :param username: the Kaggle username of the active user
+        """
         with open(path + 'dataset-metadata.json') as json_file:
             data = json.load(json_file)
         data['title'] = 'AFM-' + title
@@ -110,6 +164,12 @@ class KaggleAPI():
 class DataProcessor():
 
     def getsets(self, username):
+        """
+        gets datasets from Kaggle
+
+        :type username: string
+        :param username: the Kaggle username of the active user
+        """
         files = os.listdir('kaggledatasets/' + username + '/')
         paths = [os.path.join('kaggledatasets/' + username + '/', basename) for basename in files]
         latest_file = max(paths, key=os.path.getctime)
@@ -125,6 +185,12 @@ class DataProcessor():
         return treeinfo
 
     def uploadrawdata(self, username):
+        """
+        uploads current dataset to Kaggle
+
+        :type username: string
+        :param username: the Kaggle username of the active user
+        """
         files = os.listdir('kaggledatasets/' + username + '/')
         paths = [os.path.join('kaggledatasets/' + username + '/', basename) for basename in files]
         latest_file = max(paths, key=os.path.getctime)

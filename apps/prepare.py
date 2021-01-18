@@ -5,7 +5,6 @@ import re
 import codecs
 import numpy as np
 import plotly.express as px
-
 import dash
 from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
@@ -14,9 +13,7 @@ import dash_table
 import plotly.graph_objs as go
 from zipfile import ZipFile
 import timeit
-
 import pandas as pd
-
 from app import app
 from apps.opticsparser import ConvertOptics
 from apps.opticsparser import ConvertRangeAFM
@@ -28,35 +25,41 @@ from apps.kaggle2 import KaggleAPI
 import shutil
 import dash_core_components as dcc
 import time
+import plotly.io as pio
+pio.renderers.default = 'iframe'
 
 
 
 
-#get data
-
+#Set up the Preparation data structure and the database functionality
 db = Data()
 kaggle = KaggleAPI()
 
 
 
 
-import plotly.io as pio
-pio.renderers.default = 'iframe'
+
 
 @app.callback(
     dash.dependencies.Output('sessionid', 'children'),
     [dash.dependencies.Input("sessionid", "value")]
 )
 def update_forward_dro(click):
-    print('testing testing 123')
-    #return json.dumps(uuid.uuid4())
+    """
+    Returns session ID to create a separate space in memory for the active user
+
+
+    :type sessionid: string
+    :param sessionid: this parameter is used to fire the callback once when the user loads the page
+    
+    """
     sesid = str(uuid.uuid4())
     db.add_exp(sesid, Experiment())
     return sesid
     
 
 
-
+#Create a styling theme to be used throughout the prepare page
 SIDEBAR_STYLE = {
     'box-sizing':'border-box',
     'width': '20%',
@@ -82,6 +85,7 @@ sidebar = html.Div(
 )
 
 
+#Set up the HTML for the upload functionality
 uploadarea = html.Div([
 
     html.H2("Upload Experiment", style={'text-align': 'center'}),
@@ -123,12 +127,14 @@ uploadarea = html.Div([
 
 ], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
 
+
+#Set up the HTML for the automatic filter
 thresholdfilter = html.Div([
     html.H2("Automatic Filter", style={'text-align': 'center'}),
     html.Div([
         dcc.Input(
             id="filtervalue", type="number",
-            debounce=True, placeholder="Debounce True", value= 100,
+            debounce=True, placeholder="Debounce True", value= 1,
             style={'float':'left',  }
     ),
     html.P('nN', style={'float':'left'})
@@ -142,7 +148,7 @@ thresholdfilter = html.Div([
 ], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
 
 
-
+#Set up the area on the Prep page to let users select experiments
 selectexperiment = html.Div([
     html.Button(html.H2('Data Overview'), id='dataoverview', n_clicks=0, style={'box-sizing':'border-box', 'align':'center'}),
     html.Div(id='select-experiment'),
@@ -151,7 +157,7 @@ selectexperiment = html.Div([
 
 ], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black', "maxHeight": "400px", "overflow": "scroll"})
 
-
+#Set up area in Prep page for the user to include any missing metadata from uploaded files
 metadata = html.Div([
     html.H2("Metadata", style={'text-align': 'center'}),
     html.Div(id='metaoutput'),
@@ -167,6 +173,16 @@ metadata = html.Div([
     [dash.dependencies.Input("filetype", "value")]
 )
 def getmetadatavalues(filetype):
+    """
+    Returns custom HTML, tailored for the specific file type uploaded by the user. 
+    This lets the user insert any metadata values that are not included in the uploaded files.
+
+
+    :type filetype: string
+    :param filetype: outlines the filetype uploaded by the user
+    
+    """
+
     if filetype != 'Optics11':
         return html.Div([
             html.P('Please enter the following metadata values, as these are not provided by JPK files.'),
@@ -204,6 +220,20 @@ def getmetadatavalues(filetype):
     dash.dependencies.Input("dataoverview", "n_clicks")]
 )
 def updatemetavalues(tiprad, cantileverk, sesid, clicks):
+    """
+    Update the metadata values in the applications data structure with the values outlined by the user. 
+
+
+    :type tiprad: float
+    :param tiprad: value outlined by user fro the tip radius
+
+    :type sesid: float
+    :param sesid: the session value of the user interacting with the page
+
+    :type clicks: int
+    :param clicks: triggers callback when the dataoverview button
+    
+    """
     if clicks != 0:
         exp = db.exps[sesid]
         for sample in exp.samples.values():
@@ -213,8 +243,13 @@ def updatemetavalues(tiprad, cantileverk, sesid, clicks):
                         indent.cantileverk = cantileverk
 
 
+'''
+@app.callback(Output("progress", "value"), [Input("interval", "n_intervals")])
+def advance_progress(n):
+    return min(n % 110, 100)
+'''
 
-
+#HTML used to let the user select to use reduced or full resolution of FD curves
 selectfeature = html.Div([
     html.H2("Resolution", style={'text-align': 'center'}),
     dcc.RadioItems(
@@ -232,17 +267,16 @@ selectfeature = html.Div([
 
 ], style={"background-color": "#DDDDDD", 'margin': '5%', 'margin-top':'4%', 'border-radius': '10px', 'border': '1px solid black',})
 
-'''
-@app.callback(Output("progress", "value"), [Input("interval", "n_intervals")])
-def advance_progress(n):
-    return min(n % 110, 100)
-'''
 
 
+#integrate parser functionality
 current = ConvertOptics() 
 multipleAFM = ConvertRangeAFM()
 
+
+#Set up the HTML for the entire Prep page
 layout = html.Div([
+    #set up the order of the sidebar in the Prep page
     html.Div([
         uploadarea,
         selectexperiment,
@@ -252,6 +286,7 @@ layout = html.Div([
     ], style= SIDEBAR_STYLE),
     
     
+    #The HTML used for the main area of the Prep page
     html.Div(id='mainfeedprep',children=[
         html.Div([
             html.H2("Prepare Data"),
@@ -317,6 +352,8 @@ layout = html.Div([
     ], style=MAIN_STYLE),
 ])
 
+
+#HTML used for the convert section of the Prep page
 submit = html.Div(id='kagglepush', children=[
             html.H2("Upload Dataset"),
             html.Div([
@@ -343,12 +380,13 @@ submit = html.Div(id='kagglepush', children=[
             
         ], style={'background-color': '#DDDDDD', 'margin': '1%', 'border': '1px solid black', 'border-radius': '10px'})
 
+
 @app.callback(
     dash.dependencies.Output('mainfeedprep', 'children'),
     [dash.dependencies.Input("submit-to-kaggle", "n_clicks"),
      dash.dependencies.Input('sessionid', 'children')]
 )
-def submitdataset(click, sesid):
+def submitdataset(click, sesid): 
     if click != 0:
 
         db.exps[sesid].outputdata(sesid)
@@ -367,6 +405,22 @@ def submitdataset(click, sesid):
      dash.dependencies.State('privatekaggle', 'value'),]
 )
 def submitdataset(click, username, key, title, slugid, sessionid, private):
+    """
+    Submits prepared dataset to Kaggle
+
+
+    :type click: int
+    :param click: click value of the submit button
+
+    :type username: string
+    :param username: name of the user submitting to Kaggle
+
+    :type key: int
+    :param key: Kaggle Key
+
+
+    
+    """
     if click != 0:
         kaggle.assign_details(username, key)
         kaggle.upload_dataset(sessionid + '/', title, slugid, username, private)
@@ -387,21 +441,20 @@ def submitdataset(click, username, key, title, slugid, sessionid, private):
     dash.dependencies.Input("sessionid", "children")]
 )
 def update_forward_dropdown(click, selected, sesid):
-    '''
-    outputvalues = []
-    test = db.exps[sesid]
-    if test.segments is not None:
-        for value in range(1, len(test.segments)):
-            name = u'Segment{}'.format(str(value))
-            outputvalues.append({'label': name, 'value': value})
-        if selected is not None:
-            if selected != 'None':
-                test.forwardseg = [selected-1, selected]
-                print(test.forwardseg)
-    else:
-        outputvalues = [{'label': 'Upload Experiment', 'value': 'None'}]
-    return outputvalues
-    '''
+    """
+    Update the forward dropdown menu with the segments used in the uploaded file.
+
+
+    :type click: int
+    :param click: dataoverview button value
+
+    :type selected: string
+    :param selected: the selected value from the forward dropdown menu
+
+    :type sesid: string
+    :param sesid: session ID of the active user
+    
+    """
     outputvalues = []
     test = db.exps[sesid]
     if test.segments is not None:
@@ -415,6 +468,8 @@ def update_forward_dropdown(click, selected, sesid):
     else:
         outputvalues = [{'label': 'Upload Experiment', 'value': 'None'}]
     return outputvalues
+
+
 @app.callback(
     dash.dependencies.Output('backward', 'options'),
     [dash.dependencies.Input("dataoverview", "n_clicks"),
@@ -422,21 +477,20 @@ def update_forward_dropdown(click, selected, sesid):
     dash.dependencies.Input('sessionid', 'children')]
 )
 def update_backward_dropdown(click, selected, sesid):
-    '''
-    outputvalues = []
-    test = db.exps[sesid]
-    if test.segments is not None:
-        for value in range(1, len(test.segments)):
-            name = u'Segment{}'.format(str(value))
-            outputvalues.append({'label': name, 'value': value})
-        if selected is not None:
-            if selected != 'None':
-                test.backwardseg = [selected-1, selected]
-                print(test.backwardseg)
-    else:
-        outputvalues = [{'label': 'Upload Experiment', 'value': 'boo'}]
-    return outputvalues
-    '''
+    """
+    Update the backward dropdown menu with the segments used in the uploaded file.
+
+
+    :type click: int
+    :param click: dataoverview button value
+
+    :type selected: string
+    :param selected: the selected value from the backward dropdown menu
+
+    :type sesid: string
+    :param sesid: session ID of the active user
+    
+    """
     outputvalues = []
     test = db.exps[sesid]
     if test.segments is not None:
@@ -457,6 +511,20 @@ def update_backward_dropdown(click, selected, sesid):
     Input('sessionid', 'children')]
 )
 def exp(value, sesid):
+    """
+    Update the forward dropdown menu with the segments used in the uploaded file.
+
+
+    :type click: int
+    :param click: dataoverview button value
+
+    :type selected: string
+    :param selected: the selected value from the forward dropdown menu
+
+    :type sesid: string
+    :param sesid: session ID of the active user
+    
+    """
     test = db.exps[sesid]
     if value is not None:
         test.assignname(value)
@@ -466,6 +534,8 @@ def exp(value, sesid):
     else:
         message = u'Select an Experiment'
     return message
+
+
 
 @app.callback(
     Output("select-experiment", 'children'),
@@ -484,8 +554,21 @@ def exp1(value, sesid):
     Input('sessionid', 'children')]
 )
 def return_comparsion(value, segment, sesid):
+    """
+    Return the CP Comparison Graph
+
+
+    :type value: int
+    :param value: value selected by the slider
+
+    :type segment: string
+    :param segment: the segment being inspected
+
+    :type sesid: string
+    :param sesid: session ID of the active user
+    
+    """
     test = db.exps[sesid]
-    print(segment)
     info = []
     n = 0
     if segment != [] and value is not None:
@@ -497,14 +580,11 @@ def return_comparsion(value, segment, sesid):
                     filenames = []
                     for element in displaypaths:
                         filenames.append(element.split('/')[2])
-                    #print(value, 'this is value mannnn')
 
                     for indent in test.samples[samplename].sets[setname].indents.values():
                         if indent.name in filenames:
-                            #print('AHKDJAHAKAEJHDAJHJWHJKWDHWJHJWHJHWDJHDJHDJHDJHDJHDJHDJHDJHDJHDJHDJDHJDH')
-                            #needs to be dynamic
+
                             if indent.piezo[test.forwardseg][0] < indent.piezo[test.forwardseg][-1]:
-                                #print('did this happen!?!?!?!')
                                 xtemp = indent.piezo[test.forwardseg].copy()
                                 ytemp = indent.load[test.forwardseg].copy()
                                 xtempback = indent.piezo[test.backwardseg][::-1].copy()
@@ -517,21 +597,17 @@ def return_comparsion(value, segment, sesid):
                                 
 
                             
-                            #print(ytemp[-1])
-                            #print(value, 'val')
+                            
                             
                             for i, loadvalue in enumerate(ytemp):
                                 if loadvalue < value:
-                                    #if loadvalue < (value*1000)/(150):
                                     lasti = xtemp [i]
                                     lasty = ytemp[i]
                                     xtemp[i] = 0
                                     ytemp[i] = 0
-                            #print(lasty, 'this is last y')
                             
                             for i, loadvalue in enumerate(ytempback):
                                 if loadvalue < value:
-                                    #if loadvalue < (value*1000)/(150):
                                     lastxback = xtempback[i]
                                     lastyback = ytempback[i]
                                     xtempback[i] = 0
@@ -598,36 +674,20 @@ def return_comparsion(value, segment, sesid):
     Input('sessionid', 'children')],
     [State('overviewgraph', 'figure')])
 def display_click_data(click_data, sesid, figure):
-    print('testttttt')
-    '''
-    dataset = db.exps[sesid]
-    print(dataset.displaypaths)
-    sample_name = 'no sam'
+    """
+    Return the curve that the user has selected
 
-    if click_data is not None:
-        curve_number = click_data['points'][0]['curveNumber']
-        x_value = click_data['points'][0]['x']
-        print('FIRE')
-        trace_name = figure['data'][curve_number]['name']
-        pathfound = False
-        while pathfound == False:
-            for element in dataset.displaypaths:
-                if element != []:
-                    for value in element:
-                        path = value.split('/')
-                        if path[-1] == trace_name:
-                            sample_name = path[0]
-                            set_name = path[1]
-                            curve_name = path[2]
-                            pathfound = True
-        if dataset.samples[sample_name].sets[set_name].indents[curve_name].filtered is False:
-            dataset.samples[sample_name].sets[set_name].indents[curve_name].filtered = True
-        else:
-            dataset.samples[sample_name].sets[set_name].indents[curve_name].filtered = False
-        return str(dataset.samples[sample_name].sets[set_name].indents[curve_name].filtered), html.P(trace_name)
-    print(sample_name)
-    return None, html.P('2NapFF 16mgmL GdL S-1 X-1 Y-7 I-1.txt', style={'float':'left'})
-    '''
+
+    :type click_data: dict
+    :param value: data regarding the displayed FD curves
+
+    :type sesid: string
+    :param sesid: the session value of the active user
+
+    :type figure: string
+    :param figure: the displayed FD curves
+    
+    """
     if click_data is not None:
         curve_number = click_data['points'][0]['curveNumber']
         trace_name = figure['data'][curve_number]['name']
@@ -657,8 +717,23 @@ def display_click_data(click_data, sesid, figure):
     State('overviewgraph', 'figure')]
 )
 def filtercurve(selectedvalue, sesid, curveinput, figure):
-    print('this fires')
-    print('this is value', selectedvalue)
+    """
+    Removes bogus FD curves selected by the user
+
+
+    :type selectedvalue: string
+    :param selectedvalue: curve selected by the user
+
+    :type sesid: string
+    :param sesid: session ID of the active user
+
+    :type curveinput: string
+    :param curveinput: name of the selected FD curve
+
+    :type figure: string
+    :param figure: data from the currently displayed curves
+    
+    """
     if curveinput is not None:
         dataset = db.exps[sesid]
         curvename = curveinput['props']['children']
@@ -707,7 +782,13 @@ def experiment_name(value):
     [Input("samname", "value")]
 )
 def sample_name(value):
-    print(value)
+    """
+    Loads the uploaded sample name into the Prep data structure
+
+    :type value: string
+    :param value: name of the uploaded sample
+
+    """
     current.assignsampname(value)
 
 
@@ -717,11 +798,16 @@ def sample_name(value):
     [Input("setname", "value")]
 )
 def set_name(value):
-    print(value)
+    """
+    Loads the uploaded set name into the Prep data structure
+
+    :type value: string
+    :param value: name of the uploaded set
+
+    """
     current.assignsetname(value)
 
-dispaycurves = [ ]
-
+'''
 @app.callback(
     Output("output", "children"),
     [Input("input2", "value")],
@@ -740,6 +826,11 @@ def input_triggers_spinner(value):
 def input_triggers_spinner(value):
     time.sleep(1)
     return None
+'''
+
+
+dispaycurves = [ ]
+
 
 
 
@@ -750,6 +841,25 @@ def input_triggers_spinner(value):
                State('upload-data', 'last_modified'),
                State('filetype', 'value'),)
 def update_output(list_of_contents, sesid, list_of_names, list_of_dates, filetype):
+    """
+    returns the main FD curve graph
+
+    :type list_of_contents: string
+    :param list_of_contents: list of uploaded data by the user
+
+    :type sesid: string
+    :param sesid: ID of the active user
+
+    :type list_of_names: string
+    :param list_of_names: list of uploaded file names
+
+    :type list_of_dates: string
+    :param list_of_dates: list of dates from uploaded files
+
+    :type filetype: string
+    :param filetype: the type of AFM vendor file uploaded onto the prep page
+
+    """
     test = db.exps[sesid]
     if list_of_contents is not None:
         if list_of_names[0].split('.')[-1] == 'zip':
@@ -834,7 +944,19 @@ def update_output(list_of_contents, sesid, list_of_names, list_of_dates, filetyp
     
 
 def parse_contents(contents, filename, date):
-    print(filename, 'hello')
+    """
+    parses specific files and load them into the prep data structure
+
+    :type contents: string
+    :param contents: contents from uploaded file
+
+    :type filename: string
+    :param filename: name of file
+
+    :type date: string
+    :param date: date of uploaded file
+
+    """
 
     content_type, content_string = contents.split(',')
     decoded = base64.b64decode(content_string)
@@ -855,6 +977,14 @@ def parse_contents(contents, filename, date):
 all_files = []
 
 def displayfunction(displaypaths):
+    """
+    Sets displayed flags in main prep data structure
+
+    :type displaypaths: string
+    :param displaypaths: exact path to the FD curve being displayed
+    
+    
+    """
     if displaypaths != []:
         samplename = displaypaths[0].split('/')[0]
         setname = displaypaths[0].split('/')[1]
@@ -865,10 +995,8 @@ def displayfunction(displaypaths):
 
         for indent in test.samples[samplename].sets[setname].indents.values():
             if indent.name in filenames:
-                print(indent.name, 'helloooo')
                 indent.displayflag = True
             else:
-                print('turned flase')
                 indent.displayflag = False
 
 
@@ -881,7 +1009,19 @@ def displayfunction(displaypaths):
     [State("test1", "options")]
 )
 def first(n_clicks, sesid, options):
-    print('do we ever get here')
+    """
+    Selects all of the curves displayed in first section of the data overview feature.
+
+    :type n_clicks: int
+    :param n_clicks: number of times the button has been selected
+    
+    :type sesid: string
+    :param sesid: the session ID of the active user
+
+    :type options: array
+    :param options: the possible FD curves that can be displayed
+
+    """
     test = db.exps[sesid]
     if (n_clicks%2) == 0:
         all_or_none = []
@@ -895,6 +1035,19 @@ def first(n_clicks, sesid, options):
     [Input('select-experiment', 'n_clicks'), Input('test1', 'value'), Input('sessionid', 'children')]
 )
 def tes(val, value, sesid):
+    """
+    Selects one of the curves displayed in first section of the data overview feature.
+
+    :type val: int
+    :param val: number of times the button has been selected
+
+    :type value: string
+    :param value: the value of the selected FD curve
+
+    :type sesid: string
+    :param sesid: the session ID of the active user
+
+    """
     test = db.exps[sesid]
     #displayfunction(value)
     test.displaypaths[0] = value
@@ -911,6 +1064,19 @@ def tes(val, value, sesid):
     [State("test2", "options")]
 )
 def test2a(n_clicks, sesid, options):
+    """
+    Selects all of the curves displayed in second section of the data overview feature.
+
+    :type n_clicks: int
+    :param n_clicks: number of times the button has been selected
+    
+    :type sesid: string
+    :param sesid: the session ID of the active user
+
+    :type options: array
+    :param options: the possible FD curves that can be displayed
+
+    """
     test = db.exps[sesid]
     if (n_clicks%2) == 0:
         all_or_none = []
@@ -924,6 +1090,19 @@ def test2a(n_clicks, sesid, options):
     [Input('select-experiment', 'n_clicks'), Input('test2', 'value'), Input('sessionid', 'children')]
 )
 def test2b(val, value, sesid):
+    """
+    Selects one of the curves displayed in first section of the data overview feature.
+
+    :type val: int
+    :param val: number of times the button has been selected
+
+    :type value: string
+    :param value: the value of the selected FD curve
+
+    :type sesid: string
+    :param sesid: the session ID of the active user
+
+    """
     test = db.exps[sesid]
     test.displaypaths[1] = value
     print('value from template First', value)
@@ -935,6 +1114,19 @@ def test2b(val, value, sesid):
     [State("test3", "options")]
 )
 def test3a(n_clicks, sesid, options):
+    """
+    Selects all of the curves displayed in third section of the data overview feature.
+
+    :type n_clicks: int
+    :param n_clicks: number of times the button has been selected
+    
+    :type sesid: string
+    :param sesid: the session ID of the active user
+
+    :type options: array
+    :param options: the possible FD curves that can be displayed
+
+    """
     test = db.exps[sesid]
     if (n_clicks%2) == 0:
         all_or_none = []
@@ -948,6 +1140,19 @@ def test3a(n_clicks, sesid, options):
     [Input('select-experiment', 'n_clicks'), Input('test3', 'value'), Input('sessionid', 'children')]
 )
 def test3b(val, value, sesid):
+    """
+    Selects one of the curves displayed in first section of the data overview feature.
+
+    :type val: int
+    :param val: number of times the button has been selected
+
+    :type value: string
+    :param value: the value of the selected FD curve
+
+    :type sesid: string
+    :param sesid: the session ID of the active user
+
+    """
     test = db.exps[sesid]
     print('value from template First', value)
     test.displaypaths[2] = value
@@ -963,6 +1168,19 @@ def test3b(val, value, sesid):
     [State("test4", "options")]
 )
 def test4a(n_clicks, sesid, options):
+    """
+    Selects all of the curves displayed in fourth section of the data overview feature.
+
+    :type n_clicks: int
+    :param n_clicks: number of times the button has been selected
+    
+    :type sesid: string
+    :param sesid: the session ID of the active user
+
+    :type options: array
+    :param options: the possible FD curves that can be displayed
+
+    """
     test = db.exps[sesid]
     if (n_clicks%2) == 0:
         all_or_none = []
@@ -976,14 +1194,26 @@ def test4a(n_clicks, sesid, options):
     [Input('select-experiment', 'n_clicks'), Input('test4', 'value'), Input('sessionid', 'children')]
 )
 def test4b(val, value, sesid):
+    """
+    Selects one of the curves displayed in first section of the data overview feature.
+
+    :type val: int
+    :param val: number of times the button has been selected
+
+    :type value: string
+    :param value: the value of the selected FD curve
+
+    :type sesid: string
+    :param sesid: the session ID of the active user
+
+    """
     test = db.exps[sesid]
     print('value from template First', value)
     test.displaypaths[3] = value
 
 
 
-
-
+'''
 
 @app.callback(
     Output('second', 'children'),
@@ -1005,7 +1235,7 @@ def thrid(value):
 )
 def fouth(value):
         print('oi oi fourth', value)
-
+'''
 prev = None
 
 @app.callback(
@@ -1019,7 +1249,28 @@ prev = None
     Input('filtervalue', 'value')]
 )
 def return_graph(value, segment, new, sesid, resolution, filtervalue):
-    print('this is sesid', sesid)
+    """
+    Returns the main graphical component of the Prep page
+
+    :type value: int
+    :param value: value selected by the user through the slider
+
+    :type segment: string
+    :param segment: selected segments
+
+    :type new: int
+    :param new: triggers update if new segment selected
+
+    :type sesid: string
+    :param sesid: the session ID of the active user
+
+    :type resolution: string
+    :param resolution: selected resolution by the user
+
+    :type filtervalue: int
+    :param filtervalue: value of the automatic threshold filter
+
+    """
     test = db.exps[sesid]
     print(new, 'test here')  
     info = []

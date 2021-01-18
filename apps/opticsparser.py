@@ -17,10 +17,22 @@ class ConvertFormat:
 
 
     def write_json(self, data, filename):
+        """
+        gets datasets from Kaggle
+
+        :type data: dict
+        :param data: analysis data
+        
+        :type filename: string
+        :param filename: name of the data being interaced with
+        """
         with open(filename,'w') as f: 
             json.dump(data, f, indent=4) 
 
     def createfile(self):
+        """
+        writes analysis data to storage
+        """
         if os.path.isfile('apps/converted/' + self.experiment_name + '/' + self.samplename + '/' + self.setname + '.txt'):
             with open('apps/converted/' + self.experiment_name + '/' + self.samplename + '/' + self.setname + '.txt') as json_file:
                 data = json.load(json_file)
@@ -34,18 +46,42 @@ class ConvertFormat:
             self.write_json(data, 'apps/converted/' + self.experiment_name + '/' + self.samplename + '/' + self.setname + '.txt')
     
     def assignexperiment(self, experimentname):
+        """
+        gets datasets from Kaggle
+
+        :type expermentname: string
+        :param experimentname: the name of the experiment being analysed
+        """
         self.experiment_name = experimentname
     
     def assignfilename(self, filename):
+        """
+        loads the name of the experiment
+        
+        :type filename: string
+        :param filename: name of the data being interaced with
+        """
         self.filename = filename
         self.data = {self.filename : {'header':{}, 'results':{} } }
         #print(filename)
         
     
     def assignsampname(self, sampname):
+        """
+        loads the name of the sample being examined
+        
+        :type sampname: string
+        :param sampname: name of the sample being interaced with
+        """
         self.samplename = sampname
     
     def assignsetname(self, setname):
+        """
+        loads the name of the set of curves being examined
+
+        :type setname: string 
+        :param setname: name of the set being examined
+        """
         self.setname = setname
     
 
@@ -55,6 +91,12 @@ class ConvertOptics(ConvertFormat):
         super().__init__(experiment_name, filename)
     
     def loadheader(self, decodedfile):
+        """
+        load the metadata from the uploaded indentation files
+
+        :type decodedfile: string
+        :param decodedfile: raw decoded metadata from uplaoded indentation files
+        """
         head = self.openfile(0,33,decodedfile)
         
 
@@ -72,6 +114,12 @@ class ConvertOptics(ConvertFormat):
         return self.data[self.filename]['header']
 
     def loaddata(self, decodedfile):
+        """
+        loads the raw data from uploaded indentation files
+
+        :type decodedfile: string
+        :param decodedfile: raw decoded data from uploaded indentation files
+        """
         self.data[self.filename]['results'] ={"Time":[], "Load":[], "Indentation":[], "Cantilever":[], "Piezo":[], "Auxiliary":[]}
         rawdata = self.openfile(35,-1,decodedfile)
 
@@ -87,6 +135,12 @@ class ConvertOptics(ConvertFormat):
         return self.data[self.filename]
 
     def realdata(self, filepath):
+        """
+        loads data for storage parser method
+        
+        :type filepath: string
+        :param filepath: path to the uploaded indentation files within storage
+        """
         self.data[self.filename]['results'] ={"Time":[], "Load":[], "Indentation":[], "Cantilever":[], "Piezo":[], "Auxiliary":[]}
         with open(filepath) as myfile:
             rawdata = myfile.readlines()[35:-1] 
@@ -105,13 +159,34 @@ class ConvertOptics(ConvertFormat):
 
     
     def extractvalue(self, sentence):
+        """
+        extracts data from a single line within an indentation file
+
+        :type sentence: string
+        :param sentence: line from indentation file
+        """
         
         return float(re.split(r"[~\\r\\n\\t]+", sentence)[-2])
     
     def extractopenfile(self, sentence):
+        """
+        extracts data for storage parser method
+ 
+        :type sentence: string
+        :param sentence: line from indentation file
+        """
         return float(sentence.split()[-1])
 
     def extractindexopenfile(self, index, head):
+        """
+        gets data from storage to parse
+ 
+        :type index: int
+        :param index: the number of lines the user wants to parse
+
+        :type head: array
+        :param head: data to be parsed 
+        """
         temp = 0
         for i in range(index):
             temp += self.data[self.filename]['results']["Time"].index(self.extractopenfile(head[20+i]))
@@ -119,10 +194,32 @@ class ConvertOptics(ConvertFormat):
 
         
 
-    def openfile(self, num1, num2, decodedfile):        
+    def openfile(self, num1, num2, decodedfile): 
+        """
+        extract data for the memory parser
+ 
+        :type num1: int
+        :param num1: first line tht has to be parsed
+
+        :type num2: int
+        :param num2: last line that has to be parsed
+
+        :type decodedfile: int
+        :param decodedfile: the decoded data to be parsed
+        """              
         return str(decodedfile).split('\\n')[num1:num2]
 
     def extractindex(self, index, head):
+        """
+        extract data for the server parser
+ 
+        :type index: int
+        :param index: number of lines to be parsed
+
+        :type head: int
+        :param head: metadata data from the indentation file
+
+        """          
         temp = 0
         for i in range(index):
             temp += self.data[self.filename]['results']["Time"].index(self.extractvalue(head[20+i]))
@@ -132,6 +229,18 @@ class ConvertOptics(ConvertFormat):
 
 
     def openrealfile(self, filepath):
+        """
+        extract data for the memory parser
+ 
+        :type num1: int
+        :param num1: first line tht has to be parsed
+
+        :type num2: int
+        :param num2: last line that has to be parsed
+
+        :type decodedfile: int
+        :param decodedfile: the decoded data to be parsed
+        """  
         with open(filepath) as myfile:
             head = myfile.readlines()[0:33]
         
@@ -158,6 +267,16 @@ class ConvertRangeAFM(ConvertFormat):
         self.metadata = None
 
     def loaddata(self, filepath, filetype):
+        """
+        load the data from AFM formats library
+ 
+        :type filepath: string
+        :param filepath: path to the indentation files uploaded by the user
+
+        :type filetype: string
+        :param filetype: type of AFM/nanoindenter vendor files uploaded by the user
+
+        """  
         if filetype == 'JPK Instruments':
             print('got here woooo')
             dslist = afmformats.load_data(filepath)
