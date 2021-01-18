@@ -6,6 +6,24 @@ from scipy.optimize import curve_fit
 class ContactPoint:
     
     def calculate(self, force, displacement, Athreshold=10, Fthreshold=100.0, deltax=2000.0):
+        """
+        Returns the calculated contact point
+
+        :type force: array
+        :param force: force data from FD curve
+
+        :type displacement: array
+        :param displacement: displacement data from FD curve
+        
+        :type Athreshold: int
+        :param Athreshold: Athreshold data determined by the user
+
+        :type Fthreshold: int
+        :param Fthreshold: Fthreshold data determined by the user
+
+        :type deltax: int
+        :param deltax: deltax data determined by the user
+        """
         yth = Athreshold
         x = np.array(displacement)
         y = np.array(force)
@@ -40,6 +58,19 @@ class ContactPoint:
 class Filters:
 
     def savgol(self, force, displacement, zwin=21):
+        """
+        Returns the calculated contact point
+
+        :type force: array
+        :param force: force data from FD curve
+
+        :type displacement: array
+        :param displacement: displacement data from FD curve
+        
+        :type zwin: int
+        :param zwin: window value of the filter determined by the user
+
+        """
         x = np.array(displacement)
         y = np.array(force)
         zstep = (max(displacement) - min(displacement)) / (len(displacement) - 1)
@@ -53,6 +84,21 @@ class Filters:
 class YoungsModulus:
 
     def calculate_indentation(self, force, displacement, cpindex, k=0.032):
+        """
+        Returns the calculated contact point
+
+        :type force: array
+        :param force: force data from FD curve
+
+        :type displacement: array
+        :param displacement: displacement data from FD curve
+        
+        :type cpindex: int
+        :param cpindex: the index of the contact point value
+
+        :type k: int
+        :param k: the elastic constant value of the cantilever
+        """
         indentation = []
 
         for value in range(cpindex, len(force)):
@@ -62,10 +108,24 @@ class YoungsModulus:
         return indentation
     
     def fitHertz(self, indentation, force, cpindex, tipradius=8000, fit_indentation_value=300.0):
-        '''
-        if self.ind is None or self.touch is None or (len(self.ind) != len(self.touch)):
-            return
-        '''
+        """
+        Returns the calculated contact point
+
+        :type indentation: array
+        :param indentation: indentation data from FD curve
+
+        :type force: array
+        :param force: force data from FD curve
+        
+        :type cpindex: int
+        :param cpindex: the index of the contact point value
+
+        :type tipradius: int
+        :param tipradius: the radius of the indenters tip
+
+        :type fit_indentation_value: int
+        :param fit_indentation_value: the size of the section of the FD curve to be analysed
+        """
         contactforce = np.array(force[cpindex:]) - force[cpindex]
         print(contactforce, 'contact force')
         ind = np.array(indentation)

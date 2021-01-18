@@ -13,6 +13,15 @@ class Data():
         self.exps = {}
     
     def add_exp(self,id, exp):
+        """
+        creates new section in the data structure for new uploaded data
+ 
+        :type ID: int
+        :param ID: users unique memory ID
+
+        :type exp: variable 
+        :param exp: new section in data structure for the new dataset
+        """  
         self.exps[id] = exp
 
 
@@ -33,12 +42,24 @@ class Experiment():
         self.availablecolors = [dict(color='#575E76', width=1), dict(color='#C7980A', width=1), dict(color='#F4651F', width=1), dict(color='#82D8A7', width=1), dict(color='#CC3A05', width=1), dict(color='#575E76', width=1), dict(color='#156943',width=1), dict(color='#0BD055',width=1), dict(color='#ACD338',width=1)]
 
     def addsample(self, name):
+        """
+        add new sample to data structure
+ 
+        :type name: string
+        :param name: name of the sample being uploaded
+        """  
         #self.samples.append(Sample(name))
         #self.samplenames.append(name)
         self.samples[name] = Sample(name)
 
 
     def assignname(self, name):
+        """
+        assign experiment name
+ 
+        :type name: string
+        :param name: name of experiment being uploaded
+        """  
         self.name = name
 
     def outputdata(self, sessionid):
@@ -75,6 +96,12 @@ class Sample():
         self.color = None
         
     def addset(self, setname):
+        """
+        add a new set uploaded by the user to the applications data structure
+ 
+        :type setname: string
+        :param setname: name of the set being examined
+        """  
         #self.sets.append(Set(setname))
         #self.setnames.append(setname)
         self.sets[setname] = Set(setname)
@@ -98,6 +125,21 @@ class Set():
         #self.loadindentszip(self.file)
     
     def addindent(self, name, zip_obj, filepath, afmformat):
+        """
+        add a new indentation uploaded by the user to the applications data structure
+ 
+        :type name: string
+        :param name: name of the indentation file uploaded
+
+        :type zip_obj: zip object
+        :param zip_obj: the zipped file object uploaded by the user
+
+        :type filepath: string
+        :param filepath: path to the uploaded data by the user
+
+        :type afmformat: afmformat object
+        :param afmformat: afmformat object used to parse uploaded indentation files
+        """ 
         #self.indentnames.append(name)
         #self.indents.append(Rawdata(name, zipobject=zip_obj, files=filepath))
         self.indents[name] = Rawdata(name, zipobject=zip_obj, files=filepath, fileformat=afmformat )
@@ -147,6 +189,9 @@ class Rawdata():
      
     
     def convertdata(self):
+        """
+        parse uploaded data
+        """ 
         data = b''
         for line in self.zip_obj.open(self.file):
             data += line
@@ -156,6 +201,12 @@ class Rawdata():
     
     
     def loaddataoptics(self, data):
+        """
+        load parsed Optics11 data
+ 
+        :type data: dict
+        :param data: parsed Optics11 data
+        """ 
         #get index here and split up data
         test = [0]
         
@@ -170,7 +221,12 @@ class Rawdata():
         
 
     def loaddatafull(self, fulldata):
-
+        """
+        load parsed AFMformats data
+ 
+        :type fulldata: dict
+        :param fulldata: parsed AFMformats data
+        """ 
         raw_data = fulldata[0]
         self.time = raw_data['time']
         self.piezo = raw_data['piezo']
@@ -183,6 +239,12 @@ class Rawdata():
 
 
     def loadheader(self, data):
+        """
+        load all of the raw data into the specific variables
+ 
+        :type data: dict
+        :param data: parsed uploaded data
+        """ 
         self.tipradius = data['tipradius']
         self.calibrationfactor = data['calibrationfactor']
         self.cantileverk = data['cantileverk']
@@ -199,9 +261,21 @@ class Rawdata():
         print(len(self.piezo[1]), 'this is the length')
 
     def assignforward(self, forward):
+        """
+        assign forward segment of raw indentation data
+ 
+        :type forward: int
+        :param forward: forward segment value
+        """ 
         self.forwardsegment = forward
 
     def assignbackward(self, backward):
+        """
+        assign backward segment of raw indentation data
+ 
+        :type forward: int
+        :param forward: backward segment value
+        """ 
         self.backwardsegment = backward
     
 
