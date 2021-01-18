@@ -1,0 +1,77 @@
+apps package
+============
+
+Submodules
+----------
+
+apps.about module
+-----------------
+
+.. automodule:: apps.about
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+apps.analysis module
+--------------------
+
+.. automodule:: apps.analysis
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+apps.anlysisfunctions module
+----------------------------
+
+.. automodule:: apps.anlysisfunctions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+apps.community module
+---------------------
+
+.. automodule:: apps.community
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+apps.home module
+----------------
+
+.. automodule:: apps.home
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+apps.kaggle2 module
+-------------------
+
+.. automodule:: apps.kaggle2
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+apps.opticsparser module
+------------------------
+
+.. automodule:: apps.opticsparser
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+apps.prepare module
+-------------------
+
+.. automodule:: apps.prepare
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: apps
+   :members:
+   :undoc-members:
+   :show-inheritance:

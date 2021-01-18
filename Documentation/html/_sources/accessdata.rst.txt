@@ -1,0 +1,7 @@
+accessdata module
+=================
+
+.. automodule:: accessdata
+   :members:
+   :undoc-members:
+   :show-inheritance:
